@@ -1,264 +1,209 @@
-'use client';
+"use client";
 
-import { useState, useCallback, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { ImageUploader } from '@/components/ImageUploader';
-import { IProductImage } from '@/models/Product';
+import { useState } from "react";
+import FileUpload from "@/components/Fileupload";
 
-
-interface ProductFormData {
-  name: string;
-  description: string;
-  price: number;
-  mprice: number;
-  stock?: number;
-  category: string;
-  brand?: string;
-  featured: boolean;
-  images: IProductImage[];
+interface IProductImage {
+  url: string;
+  fileId?: string;
 }
 
-export default function CreateProductForm() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    description: '',
-    price: 0,
-    mprice: 0,
-    stock: 0,
-    category: '',
-    brand: '',
+const CreateProduct = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    mprice: "",
+    stock: "",
+    category: "",
+    brand: "",
+    video: "",
     featured: false,
-    images: [],
   });
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const { name, value } = e.target;
-      setFormData(prev => ({
-        ...prev,
-        [name]: name.includes('price') || name === 'stock' ? Number(value) : value,
-      }));
-    },
-    []
-  );
+  const [images, setImages] = useState<IProductImage[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleImagesUpload = useCallback((uploadedImages: IProductImage[]) => {
-    setFormData(prev => ({ ...prev, images: uploadedImages }));
-  }, []);
+const handleChange = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => {
+  const target = e.target;
 
-  const handleRemoveImage = useCallback((index: number) => {
-    setFormData(prev => ({
+  if (target instanceof HTMLInputElement && target.type === "checkbox") {
+    setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+      [target.name]: target.checked,
     }));
-  }, []);
+  } else {
+    setFormData((prev) => ({
+      ...prev,
+      [target.name]: target.value,
+    }));
+  }
+};
 
-  const handleSwitchChange = useCallback((checked: boolean) => {
-    setFormData(prev => ({ ...prev, featured: checked }));
-  }, []);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (formData.images.length === 0) {
-      toast.error('Please upload at least one product image');
+  const handleSubmit = async () => {
+    if (
+      !formData.name ||
+      !formData.description ||
+      !formData.price ||
+      !formData.category
+    ) {
+      alert("Please fill all required fields.");
       return;
     }
 
-    if (!formData.name.trim()) {
-      toast.error('Product name is required');
+    if (images.length === 0) {
+      alert("Please upload at least one image.");
       return;
     }
 
-    if (formData.price <= 0) {
-      toast.error('Price must be greater than 0');
-      return;
-    }
-
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          slug: formData.name.toLowerCase().replace(/\s+/g, '-'),
+          price: Number(formData.price),
+          mprice: Number(formData.mprice),
+          stock: Number(formData.stock),
+          images,
         }),
       });
+console.log("res",res)
+      const data = await res.json();
+      setLoading(false);
 
-      if (!response.ok) {
-        throw new Error(response.statusText || 'Failed to create product');
+      if (!res.ok) {
+        alert("Failed: " + data.message);
+        return;
       }
 
-      await response.json();
-      toast.success('Product created successfully');
-      router.push('/products');
+      alert("✅ Product created successfully!");
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        mprice: "",
+        stock: "",
+        category: "",
+        brand: "",
+        video: "",
+        featured: false,
+      });
+      setImages([]);
     } catch (error) {
-      console.error('Error:', error);
-      toast.error(error instanceof Error ? error.message : 'Something went wrong');
-    } finally {
-      setIsLoading(false);
+      console.error(error);
+      alert("Something went wrong!");
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-2xl font-bold mb-6">Create New Product</h1>
+    <div className="max-w-3xl mx-auto p-6 space-y-6 bg-white shadow rounded">
+      <h1 className="text-2xl font-bold">Create Product</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <InputField
-              label="Product Name*"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              disabled={isLoading}
-              required
-            />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="Product Name*"
+          className="w-full border p-2 rounded"
+        />
 
-            <TextareaField
-              label="Description*"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
+        <input
+          type="text"
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          placeholder="Category*"
+          className="w-full border p-2 rounded"
+        />
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium">Product Images*</label>
-              <ImageUploader
-                onUploadComplete={handleImagesUpload}
-                initialImages={formData.images}
-                onRemoveImage={handleRemoveImage}
-            
-              />
-            </div>
-          </div>
+        <input
+          type="text"
+          name="brand"
+          value={formData.brand}
+          onChange={handleChange}
+          placeholder="Brand"
+          className="w-full border p-2 rounded"
+        />
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <InputField
-                label="Price*"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleChange}
-                min={0.01}
-                step={0.01}
-                required
-                disabled={isLoading}
-              />
+        <input
+          type="text"
+          name="video"
+          value={formData.video}
+          onChange={handleChange}
+          placeholder="YouTube/Video URL"
+          className="w-full border p-2 rounded"
+        />
 
-              <InputField
-                label="Market Price"
-                name="mprice"
-                type="number"
-                value={formData.mprice}
-                onChange={handleChange}
-                min={0}
-                step={0.01}
-                disabled={isLoading}
-              />
-            </div>
+        <input
+          type="number"
+          name="price"
+          value={formData.price}
+          onChange={handleChange}
+          placeholder="Price*"
+          className="w-full border p-2 rounded"
+        />
 
-            <InputField
-              label="Stock Quantity"
-              name="stock"
-              type="number"
-              value={formData.stock}
-              onChange={handleChange}
-              min={0}
-              disabled={isLoading}
-            />
+        <input
+          type="number"
+          name="mprice"
+          value={formData.mprice}
+          onChange={handleChange}
+          placeholder="Market Price"
+          className="w-full border p-2 rounded"
+        />
 
-            <InputField
-              label="Category*"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-              disabled={isLoading}
-            />
+        <input
+          type="number"
+          name="stock"
+          value={formData.stock}
+          onChange={handleChange}
+          placeholder="Stock Quantity"
+          className="w-full border p-2 rounded"
+        />
 
-            <InputField
-              label="Brand"
-              name="brand"
-              value={formData.brand || ''}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
+        <label className="flex items-center gap-2 mt-2">
+          <input
+            type="checkbox"
+            name="featured"
+            checked={formData.featured}
+            onChange={handleChange}
+            className="accent-blue-600"
+          />
+          Featured
+        </label>
+      </div>
 
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div>
-                <label className="block text-sm font-medium">Featured Product</label>
-                <p className="text-sm text-muted-foreground">
-                  Show this product on homepage
-                </p>
-              </div>
-              <Switch
-                checked={formData.featured}
-                onCheckedChange={handleSwitchChange}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-        </div>
+      <textarea
+        name="description"
+        value={formData.description}
+        onChange={handleChange}
+        placeholder="Product Description*"
+        rows={4}
+        className="w-full border p-2 rounded"
+      />
 
-        <div className="flex justify-end gap-4 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading || formData.images.length === 0}
-            className="min-w-32"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Product'
-            )}
-          </Button>
-        </div>
-      </form>
+      <FileUpload
+        onUploadComplete={(urls) => setImages(urls.map((url) => ({ url })))}
+      />
+
+      <button
+        onClick={handleSubmit}
+        className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+        disabled={loading}
+      >
+        {loading ? "Saving..." : "Create Product"}
+      </button>
     </div>
   );
-}
+};
 
-function InputField({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium">{label}</label>
-      <Input {...props} />
-    </div>
-  );
-}
-
-function TextareaField({ label, ...props }: { label: string } & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium">{label}</label>
-      <Textarea rows={5} {...props} />
-    </div>
-  );
-}
+export default CreateProduct;
