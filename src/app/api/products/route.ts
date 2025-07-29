@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import {  NextResponse } from 'next/server'
 
 import { connectToDatabase } from '@/lib/db'
 import { Product } from '@/models/Product'
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 }
 
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     await connectToDatabase()
     const products = await Product.find().sort({ createdAt: -1 })

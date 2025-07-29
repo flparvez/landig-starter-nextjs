@@ -17,6 +17,7 @@ interface ProductsTableProps {
 }
 
 export const ProductsTable = ({ data }: ProductsTableProps) => {
+  
   return (
     <div className="rounded-md border">
       <Table>
@@ -33,7 +34,7 @@ export const ProductsTable = ({ data }: ProductsTableProps) => {
         <TableBody>
           {data?.length > 0 ? (
             data?.map((product) => (
-              <TableRow key={product.id}>
+              <TableRow key={product._id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>{formatCurrency(product.price)}</TableCell>
                 <TableCell>
@@ -48,7 +49,7 @@ export const ProductsTable = ({ data }: ProductsTableProps) => {
                 </TableCell>
                 <TableCell>{formatDate(product.createdAt)}</TableCell>
                 <TableCell className="text-right">
-                  <Link href={`/admin/products/${product.id}`}>
+                  <Link href={`/admin/products/edit/${product._id}`}>
                     <Button variant="outline" size="sm">
                       Edit
                     </Button>

@@ -2,7 +2,7 @@
 import { DashboardCard } from '@/components/admin/DashboardCard'
 import { RecentOrdersCard } from '@/components/admin/RecentOrdersCard'
 import { SalesChartCard } from '@/components/admin/SalesChartCard'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+
 import { 
   getTotalOrders, 
   getTotalProducts, 

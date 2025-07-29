@@ -33,7 +33,7 @@ export const authOptions: NextAuthOptions = {
           if (!isValid) {
             throw new Error("invalid password");
           }
-          console.log(isValid)
+        
 
           return {
             id: user._id.toString(),

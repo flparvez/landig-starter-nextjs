@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Menu, X, Search, ChevronDown } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -46,7 +47,7 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <img src="https://www.chaicode.com/chaicode-white.svg" alt="ChaiCode" className="h-12 w-auto" />
+              <Image width={100} height={100} src="https://www.chaicode.com/chaicode-white.svg" alt="ChaiCode" className="h-12 w-auto" />
             </div>
 
             {/* Desktop Navigation */}

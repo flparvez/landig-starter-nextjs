@@ -33,8 +33,8 @@ import { useRouter } from 'next/navigation';
         throw new Error(data.error || "Registration failed");
         
       }
-console.log("res",res)
-      console.log(data);
+
+  
       router.push("/login");
     } catch (error) {
       console.error(error);

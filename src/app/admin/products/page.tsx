@@ -1,4 +1,4 @@
-import { getProducts } from "@/lib/action"
+
 import { Button } from "@/components/ui/button"
 import { ProductsTable } from "@/components/admin/products-table"
 import Link from "next/link"
@@ -7,8 +7,10 @@ import { Pagination } from "@/components/admin/pagination"
 export default async function ProductsPage({
 
 }) {
-  const page = 1;
-  const { products, totalPages } = await getProducts()
+const response = await fetch('https://landig-starter-nextjs.vercel.app/api/products')
+const data = await response.json()
+const totalPages = Math.ceil(data.count / 10)
+const page = 1
 
   return (
     <div className="space-y-6">
@@ -19,7 +21,7 @@ export default async function ProductsPage({
         </Link>
       </div>
 
-      <ProductsTable data={products} />
+      <ProductsTable data={data?.products} />
 
       {totalPages > 1 && (
         <Pagination 

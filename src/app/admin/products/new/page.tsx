@@ -73,7 +73,7 @@ const handleChange = (
           images,
         }),
       });
-console.log("res",res)
+
       const data = await res.json();
       setLoading(false);
 

@@ -1,8 +1,7 @@
 // app/(admin)/layout.tsx
-import  { authOptions }  from '@/lib/auth'
+
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
-import { redirect } from 'next/navigation'
-import { getServerSession } from 'next-auth'
+
 import { AdminNavbar } from '@/components/admin/AdminNavbar'
 
 export default async function AdminLayout({
