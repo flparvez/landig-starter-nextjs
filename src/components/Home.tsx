@@ -4,6 +4,7 @@ import { IProduct } from '@/models/Product'
 import { Image } from '@imagekit/next';
 
 import React from 'react'
+import { toast } from 'sonner';
 
 const Home =  ({products}: {products: IProduct[]}) => {
   const { addToCart } = useCart();
@@ -15,7 +16,7 @@ const handleClick = (product: IProduct) => {
       price: product.price,
       quantity: 1,
     });
-    alert("✅ Added to cart");
+    toast.success("✅ Added to cart");
   };
 
   return (

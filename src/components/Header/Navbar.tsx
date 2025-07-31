@@ -1,217 +1,137 @@
+"use client";
+import React, { useState } from "react";
+import Link from "next/link";
+import { Menu, X, Search, ShoppingCart } from "lucide-react";
+import { useCart } from "@/hooks/useCart"; 
 
-"use client"
-import { useState } from "react"
-import { Menu, X, Search, ChevronDown } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
+const navLinks = [
+  { name: "Home", href: "/" },
+  { name: "Landing", href: "/landing" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+];
 
-export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false)
+const Navbar: React.FC = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const { cart } = useCart(); // <-- get cart from useCart
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
-
-  const toggleMegaMenu = () => {
-    setIsMegaMenuOpen(!isMegaMenuOpen)
-  }
-
-  const megaMenuItems = {
-    "Web Development": [
-      { name: "React Fundamentals", level: "Beginner" },
-      { name: "Next.js Mastery", level: "Intermediate" },
-      { name: "Full Stack Development", level: "Advanced" },
-      { name: "TypeScript Deep Dive", level: "Intermediate" },
-    ],
-    "Mobile Development": [
-      { name: "React Native Basics", level: "Beginner" },
-      { name: "Flutter Development", level: "Intermediate" },
-      { name: "iOS Development", level: "Advanced" },
-      { name: "Android Development", level: "Intermediate" },
-    ],
-    "Backend Development": [
-      { name: "Node.js Fundamentals", level: "Beginner" },
-      { name: "Database Design", level: "Intermediate" },
-      { name: "API Development", level: "Advanced" },
-      { name: "DevOps Essentials", level: "Advanced" },
-    ],
-  }
+  // Calculate total items in cart
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="relative">
-   
-      {/* Main Navbar */}
-      <nav className="bg-black border-b border-neutral-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <div className="flex-shrink-0">
-              <Image width={100} height={100} src="https://www.chaicode.com/chaicode-white.svg" alt="ChaiCode" className="h-12 w-auto" />
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-8">
-              <Link
-                href="/"
-                className="text-white hover:text-orange-400 px-3 py-2 font-medium transition-colors duration-200"
-              >
-                Home
-              </Link>
-
-              {/* Mega Menu Trigger */}
-              <div className="relative">
-                <button
-                  onClick={toggleMegaMenu}
-                  className="flex items-center space-x-1 text-white hover:text-orange-400 px-3 py-2 font-medium transition-colors duration-200"
-                >
-                  <span>Courses</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-
-                {/* Mega Menu */}
-                {isMegaMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-screen max-w-4xl bg-neutral-900 border border-neutral-700 rounded-lg shadow-2xl p-8">
-                    <div className="grid grid-cols-3 gap-8">
-                      {Object.entries(megaMenuItems).map(([category, courses]) => (
-                        <div key={category}>
-                          <h3 className="text-orange-400 font-semibold mb-4 text-lg">{category}</h3>
-                          <div className="space-y-3">
-                            {courses.map((course) => (
-                              <a
-                                key={course.name}
-                                href="#"
-                                className="block group hover:bg-neutral-800 p-3 rounded-lg transition-colors duration-200"
-                              >
-                                <div className="text-white group-hover:text-orange-400 font-medium">{course.name}</div>
-                                <div className="text-neutral-400 text-sm mt-1">{course.level}</div>
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="border-t border-neutral-700 mt-8 pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-white font-semibold mb-2">New to programming?</h4>
-                          <p className="text-neutral-400 text-sm">Start with our beginner-friendly courses</p>
-                        </div>
-                        <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
-                          View All Courses
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <a
-                href="#"
-                className="text-white hover:text-orange-400 px-3 py-2 font-medium transition-colors duration-200"
-              >
-                Projects
-              </a>
-              
-            </div>
-
-            {/* Desktop Right Side */}
-            <div className="hidden lg:flex items-center space-x-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                <input
-                  type="text"
-                  placeholder="Search courses..."
-                  className="pl-10 pr-4 py-2.5 bg-neutral-800 border border-neutral-600 rounded-full text-white placeholder-neutral-500 outline-none focus:border-orange-500 transition-colors duration-200 w-72"
-                />
-              </div>
-
-              {/* Auth Buttons */}
-              <div className="flex items-center space-x-3">
-                <Link href="/auth/login" className="text-white hover:text-orange-400 px-4 py-2 font-medium transition-colors duration-200">
-                  Login
-                </Link>
-                <Link href="/auth/register" className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl whitespace-nowrap">
-                  Sign Up
-                </Link>
-              </div>
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="lg:hidden">
-              <button
-                onClick={toggleMenu}
-                className="text-white hover:text-orange-400 p-2 rounded-lg transition-colors duration-200"
-              >
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
+    <>
+      <nav className="w-full bg-white shadow-sm border-b border-gray-200 fixed z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
+          {/* Logo & Cart */}
+          <div className="flex items-center space-x-2">
+            <Link href="/" className="font-bold text-xl text-gray-700 tracking-wide select-none">
+              ShopLand
+            </Link>
           </div>
 
-          {/* Mobile Navigation */}
-          {isMenuOpen && (
-            <div className="lg:hidden border-t border-neutral-800">
-              <div className="px-2 pt-4 pb-6 space-y-2">
-                {/* Mobile Search */}
-                <div className="px-3 py-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                    <input
-                      type="text"
-                      placeholder="Search courses..."
-                      className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-600 rounded-full text-white placeholder-neutral-500 outline-none focus:border-orange-500 transition-colors duration-200"
-                    />
-                  </div>
-                </div>
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex flex-1 items-center justify-center space-x-1">
+            {navLinks.map((link) => (
+              <Link
+                href={link.href}
+                key={link.name}
+                className="mx-1 px-3 py-2 rounded text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition font-medium"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
 
-                {/* Mobile Navigation Links */}
-                <a
-                  href="#"
-                  className="block text-white hover:text-orange-400 hover:bg-neutral-800 px-3 py-3 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Home
-                </a>
-                <Link
-                  href="/"
-                  className="block text-white hover:text-orange-400 hover:bg-neutral-800 px-3 py-3 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Courses
-                </Link>
-                <a
-                  href="#"
-                  className="block text-white hover:text-orange-400 hover:bg-neutral-800 px-3 py-3 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Projects
-                </a>
-                <a
-                  href="#"
-                  className="block text-white hover:text-orange-400 hover:bg-neutral-800 px-3 py-3 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Community
-                </a>
-                <a
-                  href="#"
-                  className="block text-white hover:text-orange-400 hover:bg-neutral-800 px-3 py-3 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Blog
-                </a>
+          {/* Searchbar (desktop) */}
+          <div className="hidden lg:flex items-center min-w-[240px] ml-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Add search logic here
+              }}
+              className="relative w-full"
+            >
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products..."
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 w-full text-sm bg-gray-50"
+              />
+              <Search className="w-5 h-5 absolute left-2 top-2.5 text-gray-400" strokeWidth={2} />
+            </form>
+          </div>
 
-                {/* Mobile Auth Buttons */}
-                <div className="border-t border-neutral-700 pt-4 mt-4 space-y-2">
-                  <button className="block w-full text-left text-white hover:text-orange-400 hover:bg-neutral-800 px-3 py-3 rounded-lg font-medium transition-colors duration-200">
-                    Login
-                  </button>
-                  <button className="block w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-3 py-3 rounded-lg font-medium transition-all duration-200">
-                    Sign Up
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Cart Icon */}
+          <div className="ml-4 flex items-center">
+            <Link href="/cart" className="relative">
+              <ShoppingCart className="w-7 h-7 text-gray-700" />
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            {/* Hamburger */}
+            <button
+              type="button"
+              aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+              onClick={() => setMenuOpen((prev) => !prev)}
+              className="lg:hidden ml-2 inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              {menuOpen ? (
+                <X className="w-7 h-7" strokeWidth={2.25} />
+              ) : (
+                <Menu className="w-7 h-7" strokeWidth={2.25} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <div
+          className={`lg:hidden bg-white border-t border-gray-100 transition-all duration-300 ease-in-out overflow-hidden ${
+            menuOpen ? "max-h-[700px] py-3" : "max-h-0 py-0"
+          }`}
+          style={{ boxShadow: menuOpen ? "0 2px 10px 0 rgba(0,0,0,0.05)" : undefined }}
+        >
+          <div className="px-5 pb-2 pt-1 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                href={link.href}
+                key={link.name}
+                className="block px-3 py-2 rounded text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition font-medium"
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.name}
+              </Link>
+            ))}
+            {/* Searchbar (mobile) */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setMenuOpen(false);
+                // Optionally trigger search here
+              }}
+              className="relative mt-2"
+            >
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products..."
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded w-full focus:outline-none focus:border-blue-500 bg-gray-50 text-sm"
+              />
+              <Search className="w-5 h-5 absolute left-2 top-2.5 text-gray-400" strokeWidth={2} />
+            </form>
+          </div>
         </div>
       </nav>
-    </div>
-  )
-}
+      {/* Spacer for navbar height */}
+      <div className="h-16"></div>
+    </>
+  );
+};
 
+export default Navbar;

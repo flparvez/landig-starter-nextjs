@@ -3,9 +3,11 @@
 import { useCart } from "@/hooks/useCart";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Image } from "@imagekit/next";
+
 
 const CheckoutPage = () => {
-  const { cart, total, clearCart } = useCart();
+  const { cart, total, clearCart, updateQuantity, removeFromCart } = useCart();
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -62,7 +64,8 @@ const CheckoutPage = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow rounded space-y-6">
+    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded space-y-6">
+
       <h2 className="text-2xl font-bold">Checkout</h2>
 
       <input
@@ -98,6 +101,62 @@ const CheckoutPage = () => {
         className="w-full border p-2 rounded"
       />
 
+      <h2 className="text-xl font-bold mb-4">  Items</h2>
+
+      {cart.length === 0 ? (
+        <p className="text-gray-500">Your cart is empty.</p>
+      ) : (
+        <div className="space-y-4">
+          {cart.map((item) => (
+            <div
+              key={item.productId}
+              className="flex items-center justify-between border rounded p-3"
+            >
+              <div className="flex items-center gap-4">
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  width={60}
+                  height={60}
+                  className="rounded object-cover"
+                />
+                <div>
+                  <h4 className="font-semibold">{item.name}</h4>
+                  <p className="text-sm text-gray-600">৳{item.price} × {item.quantity}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    updateQuantity(item.productId, Math.max(1, item.quantity - 1))
+                  }
+                  className="px-2 py-1 bg-gray-200 rounded"
+                >
+                  -
+                </button>
+                <span className="px-3">{item.quantity}</span>
+                <button
+                  onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                  className="px-2 py-1 bg-gray-200 rounded"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => removeFromCart(item.productId)}
+                  className="ml-4 text-red-500 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <hr className="my-6" />
+
+
       <select
         name="paymentMethod"
         value={form.paymentMethod}
@@ -117,7 +176,7 @@ const CheckoutPage = () => {
 
       <button
         onClick={handleSubmit}
-        disabled={loading}
+        disabled={loading || cart.length === 0}
         className="bg-blue-600 text-white px-4 py-2 rounded w-full"
       >
         {loading ? "Placing Order..." : "Place Order"}

@@ -1,4 +1,5 @@
 "use client";
+import { CartProvider } from "@/hooks/useCart";
 import { ImageKitProvider } from "@imagekit/next";
 import { SessionProvider } from "next-auth/react";
 
@@ -8,7 +9,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider> 
     <ImageKitProvider urlEndpoint={urlEndpoint} transformationPosition="path">
+<CartProvider>
       {children}
+      </CartProvider>
     </ImageKitProvider>
     </SessionProvider>
   );
