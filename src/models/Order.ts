@@ -3,7 +3,7 @@ import { IOrderItem } from "./OrderItem";
 
 export interface IOrder {
   _id: Schema.Types.ObjectId;
-  user: Schema.Types.ObjectId;
+  user?: Schema.Types.ObjectId;
   fullName: string;
   phone: string;
   address: string;
@@ -18,7 +18,7 @@ export interface IOrder {
 
 const orderSchema = new Schema<IOrder>(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", },
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
     address: { type: String, required: true },

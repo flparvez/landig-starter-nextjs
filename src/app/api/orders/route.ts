@@ -10,9 +10,7 @@ import { CartItem } from "@/hooks/useCart";
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+ 
 
     const body = await req.json();
     const {
@@ -25,7 +23,15 @@ export async function POST(req: NextRequest) {
       deliveryCharge,
     } = body;
 
-    if (!fullName || !phone || !address || !city || !paymentMethod || !cartItems || cartItems.length === 0) {
+    if (
+      !fullName ||
+      !phone ||
+      !address ||
+      !city ||
+      !paymentMethod ||
+      !cartItems ||
+      cartItems.length === 0
+    ) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
@@ -37,7 +43,7 @@ export async function POST(req: NextRequest) {
     );
 
     const order = await Order.create({
-      user: new Types.ObjectId(session.user.id),
+      user: new Types.ObjectId(session?.user.id) || "",
       fullName,
       phone,
       address,
@@ -45,7 +51,7 @@ export async function POST(req: NextRequest) {
       paymentMethod,
       deliveryCharge,
       totalAmount: totalProductPrice + deliveryCharge,
-      items: [], // will push OrderItem ids below
+      items: [],
     });
 
     const orderItemIds = await Promise.all(
@@ -63,9 +69,37 @@ export async function POST(req: NextRequest) {
     order.items = orderItemIds;
     await order.save();
 
+    // ✅ Send Push Notification to Admin via OneSignal
+    await fetch("https://onesignal.com/api/v1/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${process.env.ONESIGNAL_API_KEY!}`,
+      },
+      body: JSON.stringify({
+        app_id: process.env.ONESIGNAL_APP_ID,
+        headings: { en: "🛍️ New Order Placed!" },
+        contents: {
+          en: `New Order from ${fullName}. Amount ৳${order.totalAmount}`,
+        },
+        filters: [
+          {
+            field: "tag",
+            key: "role",
+            relation: "=",
+            value: "admin",
+          },
+        ],
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/orders/${order._id}`,
+      }),
+    });
+
     return NextResponse.json({ success: true, order });
   } catch (error) {
     console.error("Order error:", error);
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
   }
 }

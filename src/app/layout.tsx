@@ -4,6 +4,8 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Header/Navbar";
 import { Toaster } from "sonner";
+import OneSignalWrapper from "@/components/OneSignalWrapper";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +35,7 @@ export default function RootLayout({
    <Providers>  
     
     <Navbar />
+      <OneSignalWrapper />
         {children}
         <Toaster />
         </Providers>
