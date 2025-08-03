@@ -38,6 +38,8 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user._id.toString(),
             email: user.email,
+            name: user.name,
+            role: user.role, // <-- role যোগ করা হয়েছে
           };
         } catch (error) {
           console.error("Auth error: ", error);
@@ -52,7 +54,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-       
+       token.role = user.role; // 
        
       }
       return token;
