@@ -2,11 +2,16 @@
 import { useCart } from '@/hooks/useCart';
 import { IProduct } from '@/models/Product'
 import { Image } from '@imagekit/next';
+import { useSession } from 'next-auth/react';
 
 import React from 'react'
 import { toast } from 'sonner';
 
 const Home =  ({products}: {products: IProduct[]}) => {
+
+  
+const { data: session } = useSession();
+  console.log(session)
   const { addToCart } = useCart();
 const handleClick = (product: IProduct) => {
     addToCart({
