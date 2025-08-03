@@ -1,4 +1,5 @@
 // app/(admin)/page.tsx
+import AdminNotificationButton from '@/components/admin/AdminNotificationButton'
 import { DashboardCard } from '@/components/admin/DashboardCard'
 import { RecentOrdersCard } from '@/components/admin/RecentOrdersCard'
 import { SalesChartCard } from '@/components/admin/SalesChartCard'
@@ -45,7 +46,13 @@ export default async function AdminDashboard() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-      
+      <div className="p-8">
+          <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
+          <p className="mb-6">
+            Enable push notifications to get an alert for every new order.
+          </p>
+          <AdminNotificationButton />
+        </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <DashboardCard 
           title="Total Revenue" 

@@ -1,3 +1,5 @@
+// app/api/orders/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Order } from "@/models/Order";
@@ -6,12 +8,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Types } from "mongoose";
 import { CartItem } from "@/hooks/useCart";
+import { User, IPushSubscription } from "@/models/User"; // CHANGE: Import IPushSubscription type
+import webpush from "web-push";
+
+// Configure web-push with your VAPID keys
+if (
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY &&
+  process.env.VAPID_PRIVATE_KEY &&
+  process.env.VAPID_MAILTO
+) {
+  webpush.setVapidDetails(
+    process.env.VAPID_MAILTO,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
- 
-
     const body = await req.json();
     const {
       fullName,
@@ -23,15 +38,7 @@ export async function POST(req: NextRequest) {
       deliveryCharge,
     } = body;
 
-    if (
-      !fullName ||
-      !phone ||
-      !address ||
-      !city ||
-      !paymentMethod ||
-      !cartItems ||
-      cartItems.length === 0
-    ) {
+    if (!fullName || !phone || !address || !city || !paymentMethod || !cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
     );
 
     const order = await Order.create({
-      user: new Types.ObjectId(session?.user.id) || "",
+      user: session?.user.id ? new Types.ObjectId(session.user.id) : undefined,
       fullName,
       phone,
       address,
@@ -69,31 +76,31 @@ export async function POST(req: NextRequest) {
     order.items = orderItemIds;
     await order.save();
 
-    // ✅ Send Push Notification to Admin via OneSignal
-    await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${process.env.ONESIGNAL_API_KEY!}`,
-      },
-      body: JSON.stringify({
-        app_id: process.env.ONESIGNAL_APP_ID,
-        headings: { en: "🛍️ New Order Placed!" },
-        contents: {
-          en: `New Order from ${fullName}. Amount ৳${order.totalAmount}`,
-        },
-        filters: [
-          {
-            field: "tag",
-            key: "role",
-            relation: "=",
-            value: "admin",
-          },
-        ],
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/orders/${order._id}`,
-      }),
-    });
+    // =========== PUSH NOTIFICATION LOGIC START ===========
+    try {
+      const admins = await User.find({ role: "ADMIN" }).lean();
+      const notificationPayload = JSON.stringify({
+        title: "New Order Received!",
+        body: `Order #${order._id.toString().slice(-6)} for $${order.totalAmount} placed.`,
+      });
 
+      // The `webpush.sendNotification` function expects a `PushSubscription` object. 
+      // Our `IPushSubscription` type matches this structure perfectly.
+      const notificationPromises = admins.flatMap(admin =>
+        // CHANGE: Explicitly type the 'sub' parameter here
+        admin.subscriptions?.map((sub: IPushSubscription) => 
+          webpush.sendNotification(sub , notificationPayload)
+        ) ?? []
+      );
+      
+      await Promise.all(notificationPromises);
+
+    } catch (pushError) {
+      console.error("Failed to send push notifications:", pushError);
+      // Do not block the order response for a push notification failure
+    }
+    // =========== PUSH NOTIFICATION LOGIC END ===========
+  
     return NextResponse.json({ success: true, order });
   } catch (error) {
     console.error("Order error:", error);

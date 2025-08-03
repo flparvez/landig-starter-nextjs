@@ -4,7 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Header/Navbar";
 import { Toaster } from "sonner";
-import OneSignalWrapper from "@/components/OneSignalWrapper";
+import { PushNotificationProvider } from "@/components/PushNotificationProvider";
 
 
 const geistSans = Geist({
@@ -32,13 +32,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+
+        <PushNotificationProvider> 
    <Providers>  
     
     <Navbar />
-      <OneSignalWrapper />
+      
         {children}
         <Toaster />
         </Providers>
+        </PushNotificationProvider>
       </body>
     </html>
   );
