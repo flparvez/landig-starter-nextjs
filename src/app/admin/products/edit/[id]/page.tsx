@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import FileUpload from "@/components/Fileupload";
 import { useParams } from "next/navigation";
+import FileEditUpload from "@/components/FileEditUplaod";
 
 interface IProductImage {
   url: string;
@@ -11,6 +11,7 @@ interface IProductImage {
 
 const EditProduct = () => {
   const { id } = useParams() as { id: string };
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -25,9 +26,7 @@ const EditProduct = () => {
   });
 
   const [images, setImages] = useState<IProductImage[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // Fetch product by ID
   useEffect(() => {
     if (!id) return;
 
@@ -35,14 +34,10 @@ const EditProduct = () => {
       try {
         const res = await fetch(`/api/products/${id}`);
         const data = await res.json();
-
-        if (!res.ok) {
-          alert("❌ Failed to fetch product");
-          return;
-        }
+        if (!res.ok) throw new Error(data.message || "Failed to fetch product");
 
         const product = data.product;
-console.log(product)
+
         setFormData({
           name: product.name || "",
           description: product.description || "",
@@ -57,14 +52,13 @@ console.log(product)
 
         setImages(product.images || []);
       } catch (error) {
-        console.error("Fetch error:", error);
-        alert("❌ Something went wrong while loading product.");
+        console.error(error);
+        alert("❌ Could not load product.");
       }
     };
 
     fetchProduct();
   }, [id]);
-
 
 const handleChange = (
   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -86,19 +80,12 @@ const handleChange = (
 
   const handleSubmit = async () => {
     const { name, price, category } = formData;
-
-    if (!name || !price || !category) {
-      alert("Please fill all required fields.");
-      return;
-    }
-
-    if (images.length === 0) {
-      alert("Please upload at least one image.");
+    if (!name || !price || !category || images.length === 0) {
+      alert("Please fill all required fields and add at least one image.");
       return;
     }
 
     setLoading(true);
-
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
@@ -116,14 +103,14 @@ const handleChange = (
       setLoading(false);
 
       if (!res.ok) {
-        alert("❌ Failed to update product: " + data.message);
+        alert("❌ Update failed: " + data.message);
         return;
       }
 
       alert("✅ Product updated successfully!");
-    } catch (error) {
-      console.error("Update error:", error);
-      alert("❌ Something went wrong while updating.");
+    } catch (err) {
+      console.error(err);
+      alert("❌ Something went wrong.");
       setLoading(false);
     }
   };
@@ -146,7 +133,7 @@ const handleChange = (
             key={name}
             type={type}
             name={name}
-            value={(formData as unknown as Record<string, string>)[name]}
+         value={(formData as unknown as Record<string, string>)[name]}
             onChange={handleChange}
             placeholder={placeholder}
             className="w-full border p-2 rounded"
@@ -159,7 +146,6 @@ const handleChange = (
             name="featured"
             checked={formData.featured}
             onChange={handleChange}
-            className="accent-blue-600"
           />
           Featured
         </label>
@@ -174,15 +160,15 @@ const handleChange = (
         className="w-full border p-2 rounded"
       />
 
-      <FileUpload
+      <FileEditUpload
         defaultImages={images}
-        onUploadComplete={(urls) => setImages(urls.map((url) => ({ url })))}
+        onUploadComplete={(urls: string[]) => setImages(urls.map((url) => ({ url })))}
       />
 
       <button
         onClick={handleSubmit}
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full"
         disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded w-full"
       >
         {loading ? "Updating..." : "Update Product"}
       </button>

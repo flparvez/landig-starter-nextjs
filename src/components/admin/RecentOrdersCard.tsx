@@ -28,7 +28,7 @@ export function RecentOrdersCard({ orders }: RecentOrdersCardProps) {
             <p className="text-sm text-muted-foreground">No recent orders</p>
           ) : (
             orders.map((order) => (
-              <div key={order.fullName} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
+              <div key={order._id.toString()} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                 <div>
                   <div className="flex items-center gap-2">
                     <Link 

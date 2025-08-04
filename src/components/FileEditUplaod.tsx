@@ -1,24 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { upload } from "@imagekit/next";
 import Image from "next/image";
+import { upload } from "@imagekit/next";
 
 interface FileUploadProps {
   onUploadComplete: (urls: string[]) => void;
   defaultImages?: { url: string }[] | string[];
 }
 
-const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) => {
+const FileEditUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [progresses, setProgresses] = useState<number[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
-  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const getAuthParams = async () => {
     const res = await fetch("/api/auth/imagekit-auth");
-    if (!res.ok) throw new Error("ImageKit authentication failed");
+    if (!res.ok) throw new Error("ImageKit auth failed");
     return res.json();
   };
 
@@ -29,12 +27,8 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
     setUploading(true);
     const auth = await getAuthParams();
     const newUrls: string[] = [];
-    const newProgresses: number[] = Array(fileArray.length).fill(0);
 
-    setProgresses((prev) => [...prev, ...newProgresses]);
-
-    for (let i = 0; i < fileArray.length; i++) {
-      const file = fileArray[i];
+    for (const file of fileArray) {
       try {
         const result = await upload({
           file,
@@ -43,38 +37,23 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
           signature: auth.signature,
           expire: auth.expire,
           token: auth.token,
-          onProgress: (e) => {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            setProgresses((prev) => {
-              const updated = [...prev];
-              updated[uploadedUrls.length + i] = percent;
-              return updated;
-            });
-          },
         });
-
-        if (result?.url) {
-          newUrls.push(result.url);
-        }
+        if (result?.url) newUrls.push(result.url);
       } catch (error) {
         console.error("Upload error:", error);
       }
     }
 
-    const updatedUrls = [...uploadedUrls, ...newUrls];
-    setUploadedUrls(updatedUrls);
-    onUploadComplete(updatedUrls);
+    const updated = [...uploadedUrls, ...newUrls];
+    setUploadedUrls(updated);
+    onUploadComplete(updated);
     setUploading(false);
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragging(false);
-    await handleFiles(e.dataTransfer.files);
-  };
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) await handleFiles(e.target.files);
+    if (e.target.files) {
+      await handleFiles(e.target.files);
+    }
   };
 
   const removeImage = (url: string) => {
@@ -84,9 +63,11 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
   };
 
   const hasInitialized = useRef(false);
+
   useEffect(() => {
-    if (!hasInitialized.current && defaultImages && Array.isArray(defaultImages)) {
-      const urls = defaultImages.map((img) =>
+    if (!hasInitialized.current && defaultImages.length > 0) {
+      const arrayImages = Array.isArray(defaultImages) ? defaultImages : [defaultImages];
+      const urls = arrayImages.map((img) =>
         typeof img === "string" ? img : img.url
       );
       setUploadedUrls(urls);
@@ -98,18 +79,10 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
   return (
     <div className="border border-dashed rounded-md p-4 bg-gray-50">
       <div
-        className={`w-full h-32 flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer transition ${
-          dragging ? "border-blue-500 bg-blue-100" : "border-gray-300"
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
+        className="w-full h-32 flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
-        {uploading ? "Uploading..." : "📤 Drag & drop files here or click to select"}
+        {uploading ? "Uploading..." : "📤 Click to select files"}
       </div>
 
       <input
@@ -120,33 +93,23 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
         onChange={handleFileChange}
       />
 
-      {progresses.length > 0 && uploading && (
-        <div className="mt-3 space-y-2">
-          {progresses.map((p, i) => (
-            <div key={i}>
-              Upload {i + 1}: <progress value={p} max={100} className="w-full" />
-            </div>
-          ))}
-        </div>
-      )}
-
       {uploadedUrls.length > 0 && (
         <div className="mt-4">
           <h4 className="font-semibold mb-2">📸 Uploaded Images</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {uploadedUrls.map((url, idx) => (
               <div key={idx} className="relative group">
                 <Image
+                  src={url}
                   width={200}
                   height={200}
-                  src={url}
                   alt={`uploaded-${idx}`}
                   className="rounded w-full h-28 object-cover"
                 />
                 <button
+                  type="button"
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition"
-                  title="Remove Image"
+                  className="absolute top-1 right-1 bg-red-600 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition"
                 >
                   ✕
                 </button>
@@ -159,4 +122,4 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
   );
 };
 
-export default FileUpload;
+export default FileEditUpload;
