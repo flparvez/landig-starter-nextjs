@@ -1,11 +1,13 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
+// 🎯 Image Schema Interface
 export interface IProductImage {
   url: string;
   fileId?: string;
   altText?: string;
 }
 
+// 📦 Product Interface
 export interface IProduct {
   _id: mongoose.Types.ObjectId;
   name: string;
@@ -17,19 +19,24 @@ export interface IProduct {
   category: string;
   brand?: string;
   video?: string;
+  tags?: string[]; // Optional tag filter support
+  specifications?: Record<string, string>; // Example: { RAM: '8GB', Battery: '5000mAh' }
   images: IProductImage[];
   featured?: boolean;
+  rating?: number;
 }
 
+// 🖼️ Image SubSchema
 const productImageSchema = new Schema<IProductImage>(
   {
     url: { type: String, required: true },
     fileId: { type: String },
     altText: { type: String },
   },
-  { _id: false } // Don't create _id for subdocs
+  { _id: false } // No _id for each image object
 );
 
+// 🛍️ Product Schema
 const productSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true },
@@ -42,20 +49,28 @@ const productSchema = new Schema<IProduct>(
     brand: { type: String },
     video: { type: String },
     images: { type: [productImageSchema], required: true },
+    tags: [{ type: String }],
+    specifications: { type: Schema.Types.Mixed },
     featured: { type: Boolean, default: false },
+    rating: { type: Number, min: 0, max: 5, default: 0 },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-// Auto-generate slug from name
+// 🔁 Auto Slug Generation (from name)
 productSchema.pre("save", function (next) {
   if (this.isModified("name")) {
     this.slug = this.name
       .toLowerCase()
+      .trim()
       .replace(/\s+/g, "-")
-      .replace(/[^\w\-]+/g, "");
+      .replace(/[^\w\-]+/g, "")
+      .replace(/\-\-+/g, "-");
   }
   next();
 });
 
+// ✅ Export Model
 export const Product = models.Product || model<IProduct>("Product", productSchema);

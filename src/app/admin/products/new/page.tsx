@@ -6,6 +6,11 @@ import FileUpload from "@/components/Fileupload";
 interface IProductImage {
   url: string;
   fileId?: string;
+  altText?: string;
+}
+
+interface ISpecification {
+  [key: string]: string;
 }
 
 const CreateProduct = () => {
@@ -19,8 +24,11 @@ const CreateProduct = () => {
     brand: "",
     video: "",
     featured: false,
+    tags: "",
+    rating: "0",
   });
 
+  const [specifications, setSpecifications] = useState<ISpecification>({});
   const [images, setImages] = useState<IProductImage[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -43,19 +51,19 @@ const handleChange = (
 };
 
 
+  const handleSpecChange = (key: string, value: string) => {
+    setSpecifications((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSubmit = async () => {
     if (
       !formData.name ||
       !formData.description ||
       !formData.price ||
-      !formData.category
+      !formData.category ||
+      images.length === 0
     ) {
-      alert("Please fill all required fields.");
-      return;
-    }
-
-    if (images.length === 0) {
-      alert("Please upload at least one image.");
+      alert("❗ সমস্ত প্রয়োজনীয় ফিল্ড পূরণ করুন এবং অন্তত একটি ছবি যুক্ত করুন।");
       return;
     }
 
@@ -70,6 +78,12 @@ const handleChange = (
           price: Number(formData.price),
           mprice: Number(formData.mprice),
           stock: Number(formData.stock),
+          rating: Number(formData.rating),
+          tags: formData.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean),
+          specifications,
           images,
         }),
       });
@@ -78,7 +92,7 @@ const handleChange = (
       setLoading(false);
 
       if (!res.ok) {
-        alert("Failed: " + data.message);
+        alert("❌ Failed: " + data.message);
         return;
       }
 
@@ -93,11 +107,14 @@ const handleChange = (
         brand: "",
         video: "",
         featured: false,
+        tags: "",
+        rating: "0",
       });
       setImages([]);
+      setSpecifications({});
     } catch (error) {
       console.error(error);
-      alert("Something went wrong!");
+      alert("❌ Something went wrong!");
       setLoading(false);
     }
   };
@@ -107,68 +124,27 @@ const handleChange = (
       <h1 className="text-2xl font-bold">Create Product</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input
-          type="text"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder="Product Name*"
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="text"
-          name="category"
-          value={formData.category}
-          onChange={handleChange}
-          placeholder="Category*"
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="text"
-          name="brand"
-          value={formData.brand}
-          onChange={handleChange}
-          placeholder="Brand"
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="text"
-          name="video"
-          value={formData.video}
-          onChange={handleChange}
-          placeholder="YouTube/Video URL"
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="number"
-          name="price"
-          value={formData.price}
-          onChange={handleChange}
-          placeholder="Price*"
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="number"
-          name="mprice"
-          value={formData.mprice}
-          onChange={handleChange}
-          placeholder="Market Price"
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="number"
-          name="stock"
-          value={formData.stock}
-          onChange={handleChange}
-          placeholder="Stock Quantity"
-          className="w-full border p-2 rounded"
-        />
+        {[
+          { name: "name", placeholder: "Product Name*", type: "text" },
+          { name: "category", placeholder: "Category*", type: "text" },
+          { name: "brand", placeholder: "Brand", type: "text" },
+          { name: "video", placeholder: "YouTube/Video URL", type: "text" },
+          { name: "price", placeholder: "Price*", type: "number" },
+          { name: "mprice", placeholder: "Market Price", type: "number" },
+          { name: "stock", placeholder: "Stock Quantity", type: "number" },
+          { name: "rating", placeholder: "Initial Rating (0-5)", type: "number" },
+          { name: "tags", placeholder: "Tags (comma separated)", type: "text" },
+        ].map(({ name, placeholder, type }) => (
+          <input
+            key={name}
+            type={type}
+            name={name}
+           value={formData[name as keyof typeof formData] as string}
+            onChange={handleChange}
+            placeholder={placeholder}
+            className="w-full border p-2 rounded"
+          />
+        ))}
 
         <label className="flex items-center gap-2 mt-2">
           <input
@@ -191,8 +167,46 @@ const handleChange = (
         className="w-full border p-2 rounded"
       />
 
+      <div className="space-y-2">
+        <h3 className="text-lg font-medium">🧾 Specifications</h3>
+        {Object.entries(specifications).map(([key, value], index) => (
+          <div key={index} className="flex gap-2">
+            <input
+              type="text"
+              value={key}
+              onChange={(e) => {
+                const newKey = e.target.value;
+                const val = specifications[key];
+                const updated = { ...specifications };
+                delete updated[key];
+                updated[newKey] = val;
+                setSpecifications(updated);
+              }}
+              className="w-1/2 border p-2 rounded"
+              placeholder="Title"
+            />
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => handleSpecChange(key, e.target.value)}
+              className="w-1/2 border p-2 rounded"
+              placeholder="Value"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          className="bg-gray-200 px-3 py-1 rounded text-sm"
+          onClick={() => handleSpecChange("", "")}
+        >
+          ➕ Add Specification
+        </button>
+      </div>
+
       <FileUpload
-        onUploadComplete={(urls) => setImages(urls.map((url) => ({ url })))}
+        onUploadComplete={(urls) =>
+          setImages(urls.map((url) => ({ url })))
+        }
       />
 
       <button

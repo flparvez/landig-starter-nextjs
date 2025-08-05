@@ -7,6 +7,11 @@ import FileEditUpload from "@/components/FileEditUplaod";
 interface IProductImage {
   url: string;
   fileId?: string;
+  altText?: string;
+}
+
+interface ISpecification {
+  [key: string]: string;
 }
 
 const EditProduct = () => {
@@ -23,9 +28,12 @@ const EditProduct = () => {
     brand: "",
     video: "",
     featured: false,
+    tags: "",
+    rating: "0",
   });
 
   const [images, setImages] = useState<IProductImage[]>([]);
+  const [specifications, setSpecifications] = useState<ISpecification>({});
 
   useEffect(() => {
     if (!id) return;
@@ -48,9 +56,12 @@ const EditProduct = () => {
           brand: product.brand || "",
           video: product.video || "",
           featured: product.featured || false,
+          tags: (product.tags || []).join(", "),
+          rating: String(product.rating || 0),
         });
 
         setImages(product.images || []);
+        setSpecifications(product.specifications || {});
       } catch (error) {
         console.error(error);
         alert("❌ Could not load product.");
@@ -59,7 +70,6 @@ const EditProduct = () => {
 
     fetchProduct();
   }, [id]);
-
 const handleChange = (
   e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
 ) => {
@@ -78,14 +88,23 @@ const handleChange = (
   }
 };
 
+  const handleSpecChange = (key: string, value: string) => {
+    setSpecifications((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
   const handleSubmit = async () => {
     const { name, price, category } = formData;
+
     if (!name || !price || !category || images.length === 0) {
-      alert("Please fill all required fields and add at least one image.");
+      alert("❗ Please fill all required fields and upload at least one image.");
       return;
     }
 
     setLoading(true);
+
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
@@ -95,6 +114,12 @@ const handleChange = (
           price: Number(formData.price),
           mprice: Number(formData.mprice),
           stock: Number(formData.stock),
+          rating: Number(formData.rating),
+          tags: formData.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+          specifications,
           images,
         }),
       });
@@ -128,12 +153,14 @@ const handleChange = (
           { name: "price", placeholder: "Price*", type: "number" },
           { name: "mprice", placeholder: "Market Price", type: "number" },
           { name: "stock", placeholder: "Stock Quantity", type: "number" },
+          { name: "rating", placeholder: "Rating (0-5)", type: "number" },
+          { name: "tags", placeholder: "Tags (comma separated)", type: "text" },
         ].map(({ name, placeholder, type }) => (
           <input
             key={name}
             type={type}
             name={name}
-         value={(formData as unknown as Record<string, string>)[name]}
+            value={formData[name as keyof typeof formData] as string}
             onChange={handleChange}
             placeholder={placeholder}
             className="w-full border p-2 rounded"
@@ -160,9 +187,48 @@ const handleChange = (
         className="w-full border p-2 rounded"
       />
 
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">📋 Specifications</h3>
+        {Object.entries(specifications).map(([key, value], index) => (
+          <div key={index} className="flex gap-2 mb-2">
+            <input
+              type="text"
+              value={key}
+              onChange={(e) => {
+                const newKey = e.target.value;
+                const newSpecs = { ...specifications };
+                const val = newSpecs[key];
+                delete newSpecs[key];
+                newSpecs[newKey] = val;
+                setSpecifications(newSpecs);
+              }}
+              className="w-1/2 border p-2 rounded"
+              placeholder="Title"
+            />
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => handleSpecChange(key, e.target.value)}
+              className="w-1/2 border p-2 rounded"
+              placeholder="Value"
+            />
+          </div>
+        ))}
+
+        <button
+          type="button"
+          className="bg-gray-200 px-3 py-1 rounded text-sm"
+          onClick={() => handleSpecChange("", "")}
+        >
+          ➕ Add Specification
+        </button>
+      </div>
+
       <FileEditUpload
         defaultImages={images}
-        onUploadComplete={(urls: string[]) => setImages(urls.map((url) => ({ url })))}
+        onUploadComplete={(urls: string[]) =>
+          setImages(urls.map((url) => ({ url })))
+        }
       />
 
       <button
