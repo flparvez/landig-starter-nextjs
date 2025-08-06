@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Image } from "@imagekit/next";
 
-
 const CheckoutPage = () => {
   const { cart, total, clearCart, updateQuantity, removeFromCart } = useCart();
   const router = useRouter();
@@ -16,19 +15,37 @@ const CheckoutPage = () => {
     address: "",
     city: "",
     paymentMethod: "COD",
+    paymentType: "FULL", // FULL | PARTIAL
+    trxId: "",
   });
 
   const [loading, setLoading] = useState(false);
 
-  const deliveryCharge = form.city.toLowerCase() === "dhaka" ? 60 : 120;
+  const deliveryCharge = form.city.trim().toLowerCase() === "dhaka" ? 60 : 120;
+  const totalAmount =
+    form.paymentType === "PARTIAL" ? 100 + deliveryCharge : total + deliveryCharge;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
-    if (!form.fullName || !form.phone || !form.address || !form.city) {
+    const { fullName, phone, address, city, paymentMethod, paymentType, trxId } = form;
+
+    if (!fullName || !phone || !address || !city) {
       alert("⚠️ Please fill all required fields.");
+      return;
+    }
+
+    if ((paymentMethod === "BKASH" || paymentMethod === "NAGAD") && !trxId) {
+      alert("⚠️ Please enter transaction ID (trxId).");
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert("🛒 Cart is empty!");
       return;
     }
 
@@ -55,7 +72,7 @@ const CheckoutPage = () => {
 
       alert("✅ Order placed successfully!");
       clearCart();
-      router.push("/thank-you");
+      router.push(`/orders/${data.orderId}`);
     } catch (error) {
       console.error(error);
       alert("❌ Something went wrong!");
@@ -64,122 +81,137 @@ const CheckoutPage = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded space-y-6">
+    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded space-y-6">
+      <h2 className="text-3xl font-bold text-center text-blue-700">🛒 Checkout</h2>
 
-      <h2 className="text-2xl font-bold">Checkout</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[
+          { name: "fullName", placeholder: "আপনার নাম*", type: "text" },
+          { name: "phone", placeholder: "ফোন নাম্বার*", type: "text" },
+          { name: "address", placeholder: "এড্রেস (থানা+জেলা)সহ লিখুন*", type: "text" },
+          { name: "city", placeholder: "City (e.g., Dhaka)*", type: "text" },
+        ].map(({ name, placeholder, type }) => (
+          <input
+            key={name}
+            type={type}
+            name={name}
+            value={form[name as keyof typeof form] as string}
+            onChange={handleChange}
+            placeholder={placeholder}
+            className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        ))}
 
-      <input
-        type="text"
-        name="fullName"
-        value={form.fullName}
-        onChange={handleChange}
-        placeholder="Full Name*"
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="phone"
-        value={form.phone}
-        onChange={handleChange}
-        placeholder="Mobile Number*"
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="address"
-        value={form.address}
-        onChange={handleChange}
-        placeholder="Full Address*"
-        className="w-full border p-2 rounded"
-      />
-      <input
-        type="text"
-        name="city"
-        value={form.city}
-        onChange={handleChange}
-        placeholder="City (e.g., Dhaka)*"
-        className="w-full border p-2 rounded"
-      />
+        {/* Payment Method */}
+        <select
+          name="paymentMethod"
+          value={form.paymentMethod}
+          onChange={handleChange}
+          className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="COD">Cash on Delivery</option>
+          <option value="BKASH">Bkash</option>
+          <option value="NAGAD">Nagad</option>
+        </select>
 
-      <h2 className="text-xl font-bold mb-4">  Items</h2>
+        {/* Payment Type */}
+        <select
+          name="paymentType"
+          value={form.paymentType}
+          onChange={handleChange}
+          className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="FULL">Pay Full Amount</option>
+          <option value="PARTIAL">Pay Partial (100৳ Advance)</option>
+        </select>
 
-      {cart.length === 0 ? (
-        <p className="text-gray-500">Your cart is empty.</p>
-      ) : (
-        <div className="space-y-4">
-          {cart.map((item) => (
-            <div
-              key={item.productId}
-              className="flex items-center justify-between border rounded p-3"
-            >
-              <div className="flex items-center gap-4">
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  width={60}
-                  height={60}
-                  className="rounded object-cover"
-                />
-                <div>
-                  <h4 className="font-semibold">{item.name}</h4>
-                  <p className="text-sm text-gray-600">৳{item.price} × {item.quantity}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    updateQuantity(item.productId, Math.max(1, item.quantity - 1))
-                  }
-                  className="px-2 py-1 bg-gray-200 rounded"
-                >
-                  -
-                </button>
-                <span className="px-3">{item.quantity}</span>
-                <button
-                  onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                  className="px-2 py-1 bg-gray-200 rounded"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => removeFromCart(item.productId)}
-                  className="ml-4 text-red-500 hover:underline"
-                >
-                  Remove
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <hr className="my-6" />
-
-
-      <select
-        name="paymentMethod"
-        value={form.paymentMethod}
-        onChange={handleChange}
-        className="w-full border p-2 rounded"
-      >
-        <option value="COD">Cash on Delivery</option>
-        <option value="BKASH">Bkash</option>
-        <option value="NAGAD">Nagad</option>
-      </select>
-
-      <div className="mt-4">
-        <p>🧾 Product Total: <strong>৳{total}</strong></p>
-        <p>🚚 Delivery Charge: <strong>৳{deliveryCharge}</strong></p>
-        <p className="text-lg mt-2">💰 Total Payable: <strong>৳{total + deliveryCharge}</strong></p>
+        {/* Transaction ID field (Only for BKASH / NAGAD) */}
+        {(form.paymentMethod === "BKASH" || form.paymentMethod === "NAGAD") && (
+          <input
+            type="text"
+            name="trxId"
+            value={form.trxId}
+            onChange={handleChange}
+            placeholder="Transaction ID (trxId)*"
+            className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        )}
       </div>
 
+      {/* Cart Items */}
+      <div className="mt-6">
+        <h3 className="text-xl font-semibold mb-4">🧾 Order Summary</h3>
+
+        {cart.length === 0 ? (
+          <p className="text-gray-500">Your cart is empty.</p>
+        ) : (
+          <div className="space-y-4">
+            {cart.map((item) => (
+              <div
+                key={item.productId}
+                className="flex items-center justify-between border rounded p-3 shadow-sm"
+              >
+                <div className="flex items-center gap-4">
+                  <Image
+                    src={item.image}
+                    alt={item.name}
+                    width={60}
+                    height={60}
+                    className="rounded object-cover"
+                  />
+                  <div>
+                    <h4 className="font-semibold">{item.name}</h4>
+                    <p className="text-sm text-gray-600">
+                      ৳{item.price} × {item.quantity}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      updateQuantity(item.productId, Math.max(1, item.quantity - 1))
+                    }
+                    className="px-2 py-1 bg-gray-200 rounded"
+                  >
+                    -
+                  </button>
+                  <span className="px-3">{item.quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                    className="px-2 py-1 bg-gray-200 rounded"
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => removeFromCart(item.productId)}
+                    className="ml-4 text-red-500 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Total Summary */}
+      <div className="mt-6 text-lg font-medium space-y-1 border-t pt-4">
+        <p>🧾 Product Total: ৳{total}</p>
+        <p>🚚 Delivery Charge: ৳{deliveryCharge}</p> <p>[ঢাকা সিটি এর মধ্যে 60 Tk ও ঢাকা সিটি এর বাহিরে ১২০ Tk]</p>
+        <p className="text-xl font-bold text-green-700">
+          💰 Total Payable: ৳{totalAmount}
+        </p>
+      </div>
+
+      {/* Submit Button */}
       <button
         onClick={handleSubmit}
         disabled={loading || cart.length === 0}
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+        className="bg-blue-600 text-white text-lg px-4 py-3 rounded w-full hover:bg-blue-700 transition"
       >
-        {loading ? "Placing Order..." : "Place Order"}
+        {loading ? "Placing Order..." : "✅ Confirm Order"}
       </button>
     </div>
   );
