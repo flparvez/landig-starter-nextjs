@@ -4,6 +4,7 @@ import { useCart } from "@/hooks/useCart";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Image } from "@imagekit/next";
+import Link from "next/link";
 
 const CheckoutPage = () => {
   const { cart, total, clearCart, updateQuantity, removeFromCart } = useCart();
@@ -21,9 +22,12 @@ const CheckoutPage = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const deliveryCharge = form.city.trim().toLowerCase() === "dhaka" ? 60 : 120;
+  // const deliveryCharge = form.city.trim().toLowerCase() === "dhaka" ? 60 : 120;
+  const deliveryCharge = 0; // Assuming free delivery for simplicity
   const totalAmount =
-    form.paymentType === "PARTIAL" ? 100 + deliveryCharge : total + deliveryCharge;
+    form.paymentType === "PARTIAL" ? 100  : total ;
+  // const totalAmount =
+  //   form.paymentType === "PARTIAL" ? 100 + deliveryCharge : total + deliveryCharge;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -82,7 +86,10 @@ const CheckoutPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded space-y-6">
-      <h2 className="text-3xl font-bold text-center text-blue-700">🛒 Checkout</h2>
+      <Link href="/landing" className="text-blue-600 text-xl hover:underline">
+        ← Back to Page
+      </Link>
+      <h2 className="text-xl sm:text-lg font-bold text-center mb-4 text-blue-700">অর্ডারটি কনফার্ম করতে ফর্মটি সম্পুর্ণ পুরণ করে নিচের Confirm Order বাটনে ক্লিক করুন।</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
@@ -198,10 +205,13 @@ const CheckoutPage = () => {
 
       {/* Total Summary */}
       <div className="mt-6 text-lg font-medium space-y-1 border-t pt-4">
-        <p>🧾 Product Total: ৳{total}</p>
-        <p>🚚 Delivery Charge: ৳{deliveryCharge}</p> <p>[ঢাকা সিটি এর মধ্যে 60 Tk ও ঢাকা সিটি এর বাহিরে ১২০ Tk]</p>
+        <p>Sub  Total: ৳{total}</p>
+        <p>🚚 সম্পূর্ণ ডেলিভারি চার্জ ফ্রি</p> 
+        {/* <p>🚚 Delivery Charge: ৳{deliveryCharge}</p> <p>[ঢাকা সিটি এর মধ্যে 60 Tk ও ঢাকা সিটি এর বাহিরে ১২০ Tk]</p> */}
+
+
         <p className="text-xl font-bold text-green-700">
-          💰 Total Payable: ৳{totalAmount}
+           Total Payable: ৳{totalAmount}
         </p>
       </div>
 

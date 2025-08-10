@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
-import Navbar from "@/components/Header/Navbar";
+// import Navbar from "@/components/Header/Navbar";
 import { Toaster } from "sonner";
 import { PushNotificationProvider } from "@/components/PushNotificationProvider";
 
@@ -36,7 +36,7 @@ export default function RootLayout({
         <PushNotificationProvider> 
    <Providers>  
     
-    <Navbar />
+    {/* <Navbar /> */}
       
         {children}
         <Toaster />
