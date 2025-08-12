@@ -60,7 +60,7 @@ export async function GET(req: NextRequest,
   try {
     const {id} = (await params)
 
-    const order = await Order.findOne({ id })
+    const order = await Order.findById(id)
       .populate({
         path: "items",
         model: OrderItem,
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest,
         },
       })
       // .populate("user", "name email")
-      .lean();
+    
 
     if (!order) {
       return NextResponse.json({ message: "Order not found" }, { status: 404 });
