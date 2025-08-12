@@ -15,7 +15,7 @@ const router = useRouter()
                   const { addToCart } = useCart();
 const handleClick = (product: IProduct) => {
     addToCart({
-      productId: product._id.toString(),
+      productId: product._id,
       name: product.name,
       image: product.images[0]?.url,
       price: product.price,

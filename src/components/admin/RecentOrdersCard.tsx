@@ -28,14 +28,14 @@ export function RecentOrdersCard({ orders }: RecentOrdersCardProps) {
             <p className="text-sm text-muted-foreground">No recent orders</p>
           ) : (
             orders.map((order) => (
-              <div key={order._id.toString()} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
+              <div key={order.orderId} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                 <div>
                   <div className="flex items-center gap-2">
                     <Link 
                       href={`/admin/orders/${order._id}`}
                       className="font-medium hover:underline"
                     >
-                      #{order._id.toString().slice(-6)}
+                      #{order.orderId}
                     </Link>
                     <Badge >
                       {order.status}

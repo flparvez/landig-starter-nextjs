@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import mongoose, { Schema, model, models, Document } from "mongoose";
 
 // 🎯 Image Schema Interface
 export interface IProductImage {
@@ -8,10 +8,10 @@ export interface IProductImage {
 }
 
 // 📦 Product Interface
-export interface IProduct {
-  _id: mongoose.Types.ObjectId;
+export interface IProduct extends Document {
   name: string;
   slug: string;
+  _id: string; // MongoDB ObjectId
   description: string;
   price: number;
   mprice: number;
@@ -19,8 +19,8 @@ export interface IProduct {
   category: string;
   brand?: string;
   video?: string;
-  tags?: string[]; // Optional tag filter support
-  specifications?: Record<string, string>; // Example: { RAM: '8GB', Battery: '5000mAh' }
+  tags?: string[];
+  specifications?: Record<string, string>;
   images: IProductImage[];
   featured?: boolean;
   rating?: number;
@@ -33,19 +33,19 @@ const productImageSchema = new Schema<IProductImage>(
     fileId: { type: String },
     altText: { type: String },
   },
-  { _id: false } // No _id for each image object
+  { _id: false }
 );
 
 // 🛍️ Product Schema
 const productSchema = new Schema<IProduct>(
   {
-    name: { type: String, required: true },
-    slug: { type: String, unique: true },
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, unique: true, index: true },
     description: { type: String, required: true },
     price: { type: Number, required: true },
     mprice: { type: Number },
     stock: { type: Number, default: 0 },
-    category: { type: String, required: true },
+    category: { type: String, required: true, index: true },
     brand: { type: String },
     video: { type: String },
     images: { type: [productImageSchema], required: true },
@@ -72,5 +72,4 @@ productSchema.pre("save", function (next) {
   next();
 });
 
-// ✅ Export Model
 export const Product = models.Product || model<IProduct>("Product", productSchema);

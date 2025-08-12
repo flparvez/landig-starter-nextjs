@@ -1,14 +1,12 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, model, models, Document } from "mongoose";
 import { IOrderItem } from "./OrderItem";
 
-// নতুন enum টাইপ
 type PaymentMethod = "BKASH" | "NAGAD" | "COD";
 type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
 type PaymentType = "FULL" | "PARTIAL";
 
-export interface IOrder {
-  _id: Schema.Types.ObjectId;
-  orderId: string; // Auto generated 3-digit unique string
+export interface IOrder extends Document {
+  orderId: string;
   user?: Schema.Types.ObjectId;
   fullName: string;
   phone: string;
@@ -16,11 +14,11 @@ export interface IOrder {
   city?: string;
   paymentMethod: PaymentMethod;
   paymentType: PaymentType;
-  trxId?: string; // Optional for COD
+  trxId?: string;
   status: OrderStatus;
   totalAmount: number;
   deliveryCharge: number;
-  items: IOrderItem[];
+  items: Schema.Types.ObjectId[] | IOrderItem[]; // Can be populated
   createdAt: Date;
 }
 
@@ -30,6 +28,7 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       unique: true,
       required: true,
+      index: true,
     },
     user: { type: Schema.Types.ObjectId, ref: "User" },
     fullName: { type: String, required: true },
@@ -65,18 +64,19 @@ const orderSchema = new Schema<IOrder>(
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-// ✅ Auto-generate 3-digit orderId before saving
+// Auto-generate 3-digit orderId before saving
 orderSchema.pre("validate", async function (next) {
-  if (!this.orderId) {
+  if (this.isNew && !this.orderId) {
     let isUnique = false;
+    let generatedId;
     while (!isUnique) {
-      const generated = Math.floor(100 + Math.random() * 900).toString(); // 3-digit
-      const exists = await Order.exists({ orderId: generated });
+      generatedId = Math.floor(100 + Math.random() * 900).toString();
+      const exists = await models.Order.exists({ orderId: generatedId });
       if (!exists) {
-        this.orderId = generated;
         isUnique = true;
       }
     }
+    this.orderId = generatedId as string;
   }
   next();
 });

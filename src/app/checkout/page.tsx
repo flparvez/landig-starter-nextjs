@@ -26,9 +26,7 @@ const CheckoutPage = () => {
   const deliveryCharge = 0; // Assuming free delivery for simplicity
   const totalAmount =
     form.paymentType === "PARTIAL" ? 100  : total ;
-  // const totalAmount =
-  //   form.paymentType === "PARTIAL" ? 100 + deliveryCharge : total + deliveryCharge;
-
+ 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -36,17 +34,14 @@ const CheckoutPage = () => {
   };
 
   const handleSubmit = async () => {
-    const { fullName, phone, address, city, paymentMethod, paymentType, trxId } = form;
+    const { fullName, phone, address } = form;
 
-    if (!fullName || !phone || !address || !city) {
+    if (!fullName || !phone || !address) {
       alert("⚠️ Please fill all required fields.");
       return;
     }
 
-    if ((paymentMethod === "BKASH" || paymentMethod === "NAGAD") && !trxId) {
-      alert("⚠️ Please enter transaction ID (trxId).");
-      return;
-    }
+    
 
     if (cart.length === 0) {
       alert("🛒 Cart is empty!");
@@ -67,6 +62,7 @@ const CheckoutPage = () => {
       });
 
       const data = await res.json();
+   
       setLoading(false);
 
       if (!res.ok) {
@@ -76,7 +72,7 @@ const CheckoutPage = () => {
 
       alert("✅ Order placed successfully!");
       clearCart();
-      router.push(`/orders/${data.orderId}`);
+      router.push(`/orders/${data?.order._id}`);
     } catch (error) {
       console.error(error);
       alert("❌ Something went wrong!");
@@ -94,9 +90,8 @@ const CheckoutPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
           { name: "fullName", placeholder: "আপনার নাম*", type: "text" },
-          { name: "phone", placeholder: "ফোন নাম্বার*", type: "text" },
-          { name: "address", placeholder: "এড্রেস (থানা+জেলা)সহ লিখুন*", type: "text" },
-          { name: "city", placeholder: "City (e.g., Dhaka)*", type: "text" },
+          { name: "phone", placeholder: "মোবাইল নাম্বার*", type: "text" },
+          { name: "address", placeholder: "আপনার ঠিকানা/এলাকার নাম, থানা, জেলা*", type: "text" },
         ].map(({ name, placeholder, type }) => (
           <input
             key={name}
@@ -117,32 +112,10 @@ const CheckoutPage = () => {
           className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="COD">Cash on Delivery</option>
-          <option value="BKASH">Bkash</option>
-          <option value="NAGAD">Nagad</option>
+          
         </select>
 
-        {/* Payment Type */}
-        <select
-          name="paymentType"
-          value={form.paymentType}
-          onChange={handleChange}
-          className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="FULL">Pay Full Amount</option>
-          <option value="PARTIAL">Pay Partial (100৳ Advance)</option>
-        </select>
-
-        {/* Transaction ID field (Only for BKASH / NAGAD) */}
-        {(form.paymentMethod === "BKASH" || form.paymentMethod === "NAGAD") && (
-          <input
-            type="text"
-            name="trxId"
-            value={form.trxId}
-            onChange={handleChange}
-            placeholder="Transaction ID (trxId)*"
-            className="w-full border border-gray-300 p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        )}
+        
       </div>
 
       {/* Cart Items */}
@@ -207,8 +180,7 @@ const CheckoutPage = () => {
       <div className="mt-6 text-lg font-medium space-y-1 border-t pt-4">
         <p>Sub  Total: ৳{total}</p>
         <p>🚚 সম্পূর্ণ ডেলিভারি চার্জ ফ্রি</p> 
-        {/* <p>🚚 Delivery Charge: ৳{deliveryCharge}</p> <p>[ঢাকা সিটি এর মধ্যে 60 Tk ও ঢাকা সিটি এর বাহিরে ১২০ Tk]</p> */}
-
+        
 
         <p className="text-xl font-bold text-green-700">
            Total Payable: ৳{totalAmount}

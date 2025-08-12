@@ -120,3 +120,27 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
+export async function GET() {
+  try {
+    // const session = await getServerSession(authOptions);
+    // if (!session?.user.id) {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
+
+    await connectToDatabase();
+
+    const orders = await Order.find()
+      .populate("items")
+      .sort({ createdAt: -1 });
+
+    return NextResponse.json({ success: true, orders });
+  } catch (error) {
+    console.error("Get orders error:", error);
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
+  }
+}

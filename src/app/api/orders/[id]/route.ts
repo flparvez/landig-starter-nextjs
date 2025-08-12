@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import { Order } from "@/models/Order";
+import { OrderItem } from "@/models/OrderItem";
+import { Product } from "@/models/Product";
+
 // import { getServerSession } from "next-auth";
 // import { authOptions } from "@/lib/auth";
 
-export async function PUT(req: NextRequest,  {params}: {params : Promise<{id: string}>} 
+export async function PUT(req: NextRequest, 
+  
+{params}: {params : Promise<{id: string}>} 
 ) {
 
  const {id} = (await params)
@@ -41,26 +46,46 @@ export async function PUT(req: NextRequest,  {params}: {params : Promise<{id: st
   }
 }
 
-export async function GET(
-    request: NextRequest,
-    {params}: {params : Promise<{id: string}>} 
-) {
+
+
+
+
+
+// GET: Retrieve a single order by its ID
+export async function GET(req: NextRequest, 
+  
+{params}: {params : Promise<{id: string}>} 
+){
+  await connectToDatabase();
   try {
-    await connectToDatabase();
     const {id} = (await params)
-    const order = await Order.findById(id)
+
+    const order = await Order.findOne({ id })
       .populate({
         path: "items",
-        populate: { path: "product" },
-      });
+        model: OrderItem,
+        populate: {
+          path: "product",
+          model: Product,
+          select: "name price images", // Select the fields you want to show from the product
+        },
+      })
+      // .populate("user", "name email")
+      .lean();
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return NextResponse.json({ message: "Order not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, order });
+    return NextResponse.json(order, { status: 200 });
   } catch (error) {
-    console.error("Order fetch error:", error);
-    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 });
+    console.error("Failed to retrieve order:", error);
+    if (error instanceof Error) {
+      return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+    return NextResponse.json(
+      { message: "An unknown error occurred" },
+      { status: 500 }
+    );
   }
 }

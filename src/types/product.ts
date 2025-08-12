@@ -29,6 +29,7 @@ export type ProductColumn = {
 export interface IIOrder {
   _id: string;
   user: IUser;
+  orderId: string;
   fullName: string;
   phone: string;
   address: string;
