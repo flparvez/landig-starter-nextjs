@@ -25,6 +25,7 @@ const AdminOrderDetailsPage = () => {
 
   useEffect(() => {
     const fetchOrder = async () => {
+      // const res = await fetch(`http://localhost:3000/api/orders/${id}`);
       const res = await fetch(`https://landig-starter-nextjs.vercel.app/api/orders/${id}`);
       const data = await res.json();
       if (res.ok) {
