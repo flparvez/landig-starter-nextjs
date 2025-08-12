@@ -13,7 +13,7 @@ const OrderConfirm = async ({
     throw new Error('Failed to fetch order confirmation')
   }
   const data = await res.json()
-  console.log(data)
+ 
   return (
     <div>
       <OrderInformationPage order={data} />

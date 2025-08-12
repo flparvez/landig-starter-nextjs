@@ -28,7 +28,7 @@ const AdminOrderDetailsPage = () => {
       const res = await fetch(`https://landig-starter-nextjs.vercel.app/api/orders/${id}`);
       const data = await res.json();
       if (res.ok) {
-        setOrder(data.order);
+        setOrder(data);
         setForm({
           status: data.order.status,
           paymentMethod: data.order.paymentMethod,

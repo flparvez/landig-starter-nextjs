@@ -31,18 +31,18 @@ export async function generateInvoicePdf(order: IIOrder) {
   drawText('Unique Store BD - Order Invoice', 50, y, 16);
   y -= 30;
 
-  drawText(`Order ID: ${order?._id?.toString().slice(-6)}`, 50, y);
+  drawText(`Order ID: ${order?.orderId}`, 50, y);
   y -= 20;
 
-  drawText(`Customer: ${order.fullName}`, 50, y);
-  drawText(`Phone: ${order.phone}`, 320, y);
+  drawText(`Name: ${order.fullName}`, 50, y);
+  drawText(`Number: ${order.phone}`, 320, y);
   y -= 20;
 
-  drawText(`Address: ${order.address}, ${order.city}`, 50, y);
+  drawText(`Address: ${order.address}`, 50, y);
   y -= 30;
 
   drawText(
-    `Payment: ${order.paymentMethod} | Status: ${order.status}`,
+    ` Status: ${order.status}`,
     50,
     y
   );
