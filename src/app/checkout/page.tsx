@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Image } from "@imagekit/next";
 import Link from "next/link";
+import { toast } from "sonner";
 
 const CheckoutPage = () => {
   const { cart, total, clearCart, updateQuantity, removeFromCart } = useCart();
@@ -70,9 +71,10 @@ const CheckoutPage = () => {
         return;
       }
 
-      alert("✅ Order placed successfully!");
+      toast.success("✅ Order placed successfully!");
+            router.push(`/orders/${data?.order._id}`);
       clearCart();
-      router.push(`/orders/${data?.order._id}`);
+
     } catch (error) {
       console.error(error);
       alert("❌ Something went wrong!");
@@ -82,10 +84,10 @@ const CheckoutPage = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded space-y-6">
-      <Link href="/landing" className="text-blue-600 text-xl hover:underline">
+      <Link href="/landing" className="text-blue-700 text-xl hover:underline">
         ← Back to Page
       </Link>
-      <h2 className="text-xl sm:text-lg font-bold text-center mb-4 text-blue-700">অর্ডারটি কনফার্ম করতে ফর্মটি সম্পুর্ণ পুরণ করে নিচের Confirm Order বাটনে ক্লিক করুন।</h2>
+      <h2 className="text-xl sm:text-lg font-bold text-center mb-4 text-blue-600">অর্ডারটি কনফার্ম করতে ফর্মটি সম্পুর্ণ পুরণ করুন।</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[
