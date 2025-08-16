@@ -67,3 +67,24 @@ export async function GET(req: NextRequest,
     return NextResponse.json({ error: "Failed to fetch product" }, { status: 500 });
   }
 }
+
+
+export async function DELETE(req: NextRequest, 
+  
+{params}: {params : Promise<{id: string}>} 
+) {
+const {id} = (await params)
+  try {
+    await connectToDatabase();
+    const deletedProduct = await Product.findByIdAndDelete(id);
+
+    if (!deletedProduct) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, product: deletedProduct }, { status: 200 });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
+  }
+}

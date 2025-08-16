@@ -16,6 +16,12 @@ import {
 } from '@/lib/action'
 
 export default async function AdminDashboard() {
+
+    const res = await fetch('https://landig-starter-nextjs.vercel.app/api/orders')
+    if (!res.ok) {
+      throw new Error('Failed to fetch recent orders')
+    }
+  const orders = await res.json()
   const [
     totalRevenue, 
     totalOrders, 
@@ -23,7 +29,7 @@ export default async function AdminDashboard() {
     totalUsers,
     pendingOrders,
     outOfStockProducts,
-    recentOrders,
+    
     salesData
   ] = await Promise.all([
     getTotalRevenue(),
@@ -81,7 +87,7 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <RecentOrdersCard orders={recentOrders} />
+        <RecentOrdersCard  orders={orders?.orders} />
         <SalesChartCard data={salesData} />
       </div>
     </div>

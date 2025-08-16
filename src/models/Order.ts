@@ -6,6 +6,7 @@ type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELL
 type PaymentType = "FULL" | "PARTIAL";
 
 export interface IOrder extends Document {
+  _id: string;
   orderId: string;
   user?: Schema.Types.ObjectId;
   fullName: string;

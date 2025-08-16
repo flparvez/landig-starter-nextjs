@@ -33,28 +33,32 @@ const CART_KEY = "cart";
 
 // 3. Create Provider
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cart, setCart] = useState<CartItem[] | undefined>(undefined);
+  const [cart, setCart] = useState<CartItem[]>([]); // ✅ always array
 
   // Load from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(CART_KEY);
-    if (stored) {
-      setCart(JSON.parse(stored));
-    } else {
-      setCart([]);
+    try {
+      const stored = localStorage.getItem(CART_KEY);
+      if (stored) {
+        setCart(JSON.parse(stored));
+      }
+    } catch (error) {
+      console.error("Failed to load cart:", error);
     }
   }, []);
 
   // Save to localStorage
   useEffect(() => {
-    if (cart !== undefined) {
+    try {
       localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    } catch (error) {
+      console.error("Failed to save cart:", error);
     }
   }, [cart]);
 
   // Cart actions
   const addToCart = (item: CartItem) => {
-    setCart((prev = []) => {
+    setCart((prev) => {
       const existing = prev.find((i) => i.productId === item.productId);
       if (existing) {
         return prev.map((i) =>
@@ -65,14 +69,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       return [...prev, item];
     });
+
+    // ✅ Alert for add to cart
+    alert(`${item.name} added to cart`);
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prev = []) => prev.filter((i) => i.productId !== productId));
+    setCart((prev) => prev.filter((i) => i.productId !== productId));
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
-    setCart((prev = []) =>
+    setCart((prev) =>
       prev.map((item) =>
         item.productId === productId ? { ...item, quantity } : item
       )
@@ -81,13 +88,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => setCart([]);
 
-  const total =
-    cart?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+  const total = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   return (
     <CartContext.Provider
       value={{
-        cart: cart ?? [],
+        cart,
         addToCart,
         removeFromCart,
         updateQuantity,
