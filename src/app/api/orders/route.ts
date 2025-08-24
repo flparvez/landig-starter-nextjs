@@ -122,8 +122,49 @@ export async function POST(req: NextRequest) {
 }
 
 
-export async function GET() {
+
+
+
+
+
+// This is the sales analytics function you provided
+async function getSalesAnalytics() {
+  // Last 30 days sales data
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const salesData = await Order.aggregate([
+    {
+      // Filter for delivered orders in the last 30 days
+      $match: {
+        createdAt: { $gte: thirtyDaysAgo },
+        status: 'DELIVERED' // Ensure you only count completed sales
+      }
+    },
+    {
+      // Group by date
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+        totalSales: { $sum: { $add: ['$totalAmount', '$deliveryCharge'] } },
+        orderCount: { $sum: 1 },
+        averageOrderValue: { $avg: { $add: ['$totalAmount', '$deliveryCharge'] } }
+      }
+    },
+    { 
+      // Sort the results by date in ascending order for charting
+      $sort: { _id: 1 } 
+    }
+  ]);
+
+  return salesData;
+}
+
+
+
+// --- MODIFIED GET HANDLER ---
+export async function GET(request: NextRequest) {
   try {
+    // --- Authentication (optional but recommended) ---
     // const session = await getServerSession(authOptions);
     // if (!session?.user.id) {
     //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -131,15 +172,29 @@ export async function GET() {
 
     await connectToDatabase();
 
-    const orders = await Order.find()
-      .populate("items")
+    // Check for the '?view=analytics' query parameter
+    const { searchParams } = new URL(request.url);
+    const view = searchParams.get('view');
+
+    // If the client is requesting analytics data
+    if (view === 'analytics') {
+      const analyticsData = await getSalesAnalytics();
+      return NextResponse.json({ success: true, analytics: analyticsData });
+    }
+
+    // --- Default behavior: Get all orders ---
+    const orders = await Order.find({})
+      // Note: Populating items on a list of all orders can be memory-intensive.
+      // Consider populating only when fetching a single order.
+      .populate("items.product") // Assuming 'product' is the ref in your items array
       .sort({ createdAt: -1 });
 
     return NextResponse.json({ success: true, orders });
+
   } catch (error) {
     console.error("Get orders error:", error);
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: "An internal server error occurred." },
       { status: 500 }
     );
   }

@@ -1,8 +1,8 @@
 // app/(admin)/page.tsx
-import AdminNotificationButton from '@/components/admin/AdminNotificationButton'
-import { DashboardCard } from '@/components/admin/DashboardCard'
-import { RecentOrdersCard } from '@/components/admin/RecentOrdersCard'
-import { SalesChartCard } from '@/components/admin/SalesChartCard'
+import AdminNotificationButton from '@/components/admin/AdminNotificationButton';
+import { DashboardCard } from '@/components/admin/DashboardCard';
+import { RecentOrdersCard } from '@/components/admin/RecentOrdersCard';
+import { SalesChartCard } from '@/components/admin/SalesChartCard'; // Import the refactored chart card
 
 import { 
   getTotalOrders, 
@@ -12,16 +12,12 @@ import {
   getPendingOrdersCount,
   getOutOfStockProductsCount,
   getRecentOrders,
-  getSalesAnalytics
-} from '@/lib/action'
+  getSalesAnalytics // This function fetches our sales data on the server
+} from '@/lib/action'; // Assuming your actions are here
 
 export default async function AdminDashboard() {
 
-    const res = await fetch('https://landig-starter-nextjs.vercel.app/api/orders')
-    if (!res.ok) {
-      throw new Error('Failed to fetch recent orders')
-    }
-  const orders = await res.json()
+  // Fetch all dashboard data concurrently for better performance
   const [
     totalRevenue, 
     totalOrders, 
@@ -29,8 +25,8 @@ export default async function AdminDashboard() {
     totalUsers,
     pendingOrders,
     outOfStockProducts,
-    
-    salesData
+    recentOrders,
+    salesData // <-- Capture the sales data here
   ] = await Promise.all([
     getTotalRevenue(),
     getTotalOrders(),
@@ -39,26 +35,23 @@ export default async function AdminDashboard() {
     getPendingOrdersCount(),
     getOutOfStockProductsCount(),
     getRecentOrders(),
-    getSalesAnalytics()
-  ])
+    getSalesAnalytics() // <-- Fetch sales data on the server
+  ]);
 
-  // Format currency
+  // Format currency for display
   const formattedTotalRevenue = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'BDT',
     minimumFractionDigits: 2
-  }).format(totalRevenue)
+  }).format(totalRevenue);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-      <div className="p-8">
-          <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-          <p className="mb-6">
-            Enable push notifications to get an alert for every new order.
-          </p>
-          <AdminNotificationButton />
-        </div>
+      <div className='flex items-center justify-between'>
+        <h1 className="text-2xl font-bold">Dashboard Overview</h1>
+        <AdminNotificationButton />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <DashboardCard 
           title="Total Revenue" 
@@ -86,10 +79,16 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <RecentOrdersCard  orders={orders?.orders} />
-        <SalesChartCard data={salesData} />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+            {/* Pass the server-fetched recent orders to the component */}
+            <RecentOrdersCard orders={recentOrders} />
+        </div>
+        <div className="lg:col-span-2">
+            {/* Pass the server-fetched sales data directly as a prop */}
+            <SalesChartCard data={salesData} />
+        </div>
       </div>
     </div>
-  )
+  );
 }

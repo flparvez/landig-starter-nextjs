@@ -1,14 +1,12 @@
-// components/SalesChartCard.tsx
 'use client'
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi'
 
+// Define the shape of the data we expect from the parent
 interface SalesData {
   _id: string
   totalSales: number
-  orderCount: number
-  averageOrderValue: number
 }
 
 interface SalesChartCardProps {
@@ -16,21 +14,43 @@ interface SalesChartCardProps {
 }
 
 export function SalesChartCard({ data }: SalesChartCardProps) {
-  // Calculate percentage change
+ 
+  // Handle the case where there is no data to display
+  if (!data || data.length === 0) {
+    return (
+      <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+        <div className="p-6">
+          <h3 className="text-lg font-semibold">Sales Analytics</h3>
+          <p className="text-sm text-muted-foreground mt-4">
+            No sales data available for the last 30 days.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate percentage change based on the received data
   const calculateTrend = () => {
-    if (data.length < 2) return { percentage: 0, isUp: false }
+    if (data.length < 2) return { percentage: 0, isUp: true }; // Default for single data point
     
-    const firstDay = data[0].totalSales
-    const lastDay = data[data.length - 1].totalSales
-    const percentage = ((lastDay - firstDay) / firstDay) * 100
+    // Use the first and last elements for trend calculation
+    const firstDaySales = data[0].totalSales;
+    const lastDaySales = data[data.length - 1].totalSales;
+    
+    // Avoid division by zero
+    if (firstDaySales === 0) {
+      return { percentage: 100, isUp: lastDaySales > 0 };
+    }
+    
+    const percentage = ((lastDaySales - firstDaySales) / firstDaySales) * 100;
     
     return {
       percentage: Math.abs(percentage),
       isUp: percentage >= 0
-    }
-  }
+    };
+  };
 
-  const trend = calculateTrend()
+  const trend = calculateTrend();
 
   return (
     <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -59,7 +79,7 @@ export function SalesChartCard({ data }: SalesChartCardProps) {
               <XAxis 
                 dataKey="_id" 
                 tick={{ fontSize: 12 }}
-                tickFormatter={(value:string) => value.split('-')[2]} // Show only day
+                tickFormatter={(value: string) => value.split('-')[2]} // Show only day
                 axisLine={false}
                 tickLine={false}
               />
@@ -72,11 +92,7 @@ export function SalesChartCard({ data }: SalesChartCardProps) {
               <Tooltip 
                 formatter={(value: number) => [`৳${value.toFixed(2)}`, 'Total Sales']}
                 labelFormatter={(label) => `Date: ${label}`}
-                contentStyle={{
-                  borderRadius: '8px',
-                  border: 'none',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-                }}
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}
               />
               <Line 
                 type="monotone" 

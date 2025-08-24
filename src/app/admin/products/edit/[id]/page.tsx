@@ -1,100 +1,95 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import FileEditUpload from "@/components/FileEditUplaod"; // Corrected the typo from Uplaod to Upload if necessary
-import { toast } from "sonner"; // Using toast for better UX than alerts
-
+import FileEditUpload from "@/components/FileEditUplaod";
+import { toast } from "sonner";
 interface IProductImage {
-  url: string;
-  fileId?: string;
-  altText?: string;
+url: string;
+fileId?: string;
+altText?: string;
 }
-
 interface ISpecification {
-  [key: string]: string;
+[key: string]: string;
 }
-
 const EditProduct = () => {
-  const { id } = useParams() as { id: string };
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true); // State to track initial data load
-
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: "",
-    mprice: "",
-    stock: "",
-    category: "",
-    brand: "",
-    video: "",
-    featured: false,
-    tags: "",
-    rating: "0",
-  });
+const { id } = useParams() as { id: string };
+const [loading, setLoading] = useState(false);
+const [formData, setFormData] = useState({
+name: "",
+description: "",
+price: "",
+mprice: "",
+stock: "",
+category: "",
+brand: "",
+video: "",
+featured: false,
+tags: "",
+rating: "0",
+});
 
   const [images, setImages] = useState<IProductImage[]>([]);
   const [reviews, setReviews] = useState<IProductImage[]>([]);
-  const [specifications, setSpecifications] = useState<ISpecification>({});
+const [specifications, setSpecifications] = useState<ISpecification>({});
+useEffect(() => {
+if (!id) return;
 
-  useEffect(() => {
-    if (!id) return;
+const fetchProduct = async () => {
+  try {
+    const res = await fetch(`/api/products/${id}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to fetch product");
 
-    const fetchProduct = async () => {
-      setFetching(true);
-      try {
-        const res = await fetch(`/api/products/${id}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Failed to fetch product");
+    const product = data.product;
 
-        const product = data.product;
+    setFormData({
+      name: product.name || "",
+      description: product.description || "",
+      price: String(product.price || ""),
+      mprice: String(product.mprice || ""),
+      stock: String(product.stock || ""),
+      category: product.category || "",
+      brand: product.brand || "",
+      video: product.video || "",
+      featured: product.featured || false,
+      tags: (product.tags || []).join(", "),
+      rating: String(product.rating || 0),
+    });
 
-        setFormData({
-          name: product.name || "",
-          description: product.description || "",
-          price: String(product.price || ""),
-          mprice: String(product.mprice || ""),
-          stock: String(product.stock || ""),
-          category: product.category || "",
-          brand: product.brand || "",
-          video: product.video || "",
-          featured: product.featured || false,
-          tags: (product.tags || []).join(", "),
-          rating: String(product.rating || 0),
-        });
+    setImages(product.images || []);
+    setReviews(product?.reviews || []);
+    setSpecifications(product.specifications || {});
+  } catch (error) {
+    console.error(error);
+    alert("❌ Could not load product.");
+  }
+};
 
-        setImages(product.images || []);
-        setReviews(product.reviews || []);
-        setSpecifications(product.specifications || {});
-      } catch (error) {
-        console.error(error);
-        toast.error("❌ Could not load product data.");
-      } finally {
-        setFetching(false);
-      }
-    };
+fetchProduct();
+}, [id]);
+const handleChange = (
+e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => {
+const target = e.target;
+if (target instanceof HTMLInputElement && target.type === "checkbox") {
+setFormData((prev) => ({
+...prev,
+[target.name]: target.checked,
+}));
+} else {
+setFormData((prev) => ({
+...prev,
+[target.name]: target.value,
+}));
+}
+};
+const handleSpecChange = (key: string, value: string) => {
+setSpecifications((prev) => ({
+...prev,
+[key]: value,
+}));
+};
 
-    fetchProduct();
-  }, [id]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const target = e.target;
-    const { name, value, type } = target;
-
-    if (type === "checkbox" && target instanceof HTMLInputElement) {
-      setFormData((prev) => ({ ...prev, [name]: target.checked }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSpecChange = (key: string, value: string) => {
-    setSpecifications((prev) => ({ ...prev, [key]: value }));
-  };
-  
   // --- MODIFICATION START ---
 
   // Handler for when a new batch of PRODUCT images is uploaded
@@ -130,64 +125,140 @@ const EditProduct = () => {
   // --- MODIFICATION END ---
 
 
-  const handleSubmit = async () => {
-    if (!formData.name || !formData.price || !formData.category || images.length === 0) {
-      toast.error("❗ Please fill required fields and ensure there's at least one product image.");
-      return;
-    }
 
-    setLoading(true);
 
-    try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          price: Number(formData.price),
-          mprice: Number(formData.mprice),
-          stock: Number(formData.stock),
-          rating: Number(formData.rating),
-          tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
-          specifications,
-          images, // This state is now always correct
-          reviews, // This state is also always correct
-        }),
-      });
 
-      const data = await res.json();
-      setLoading(false);
+const handleSubmit = async () => {
+const { name, price, category } = formData;
 
-      if (!res.ok) {
-        toast.error("❌ Update failed: " + data.message);
-        return;
-      }
-      toast.success("✅ Product updated successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error("❌ An unexpected error occurred.");
-      setLoading(false);
-    }
-  };
+if (!name || !price || !category || images.length === 0) {
+  alert("❗ Please fill all required fields and upload at least one image.");
+  return;
+}
 
-  if (fetching) {
-    return <div className="p-6 text-center">Loading product data...</div>;
+setLoading(true);
+
+try {
+  const res = await fetch(`/api/products/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...formData,
+      price: Number(formData.price),
+      mprice: Number(formData.mprice),
+      stock: Number(formData.stock),
+      rating: Number(formData.rating),
+      tags: formData.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      specifications,
+      images,
+      reviews,
+    }),
+  });
+
+  const data = await res.json();
+  setLoading(false);
+
+  if (!res.ok) {
+    alert("❌ Update failed: " + data.message);
+    return;
   }
 
-  return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6 bg-white shadow rounded">
-      <h1 className="text-2xl font-bold">Edit Product</h1>
+  alert("✅ Product updated successfully!");
+} catch (err) {
+  console.error(err);
+  alert("❌ Something went wrong.");
+  setLoading(false);
+}
+};
+return (
+<div className="max-w-3xl mx-auto p-6 space-y-6 bg-white shadow rounded">
+<h1 className="text-2xl font-bold">Edit Product</h1>
+code
+Code
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {[
+      { name: "name", placeholder: "Product Name*", type: "text" },
+      { name: "category", placeholder: "Category*", type: "text" },
+      { name: "brand", placeholder: "Brand", type: "text" },
+      { name: "video", placeholder: "YouTube/Video URL", type: "text" },
+      { name: "price", placeholder: "Price*", type: "number" },
+      { name: "mprice", placeholder: "Market Price", type: "number" },
+      { name: "stock", placeholder: "Stock Quantity", type: "number" },
+      { name: "rating", placeholder: "Rating (0-5)", type: "number" },
+      { name: "tags", placeholder: "Tags (comma separated)", type: "text" },
+    ].map(({ name, placeholder, type }) => (
+      <input
+        key={name}
+        type={type}
+        name={name}
+        value={formData[name as keyof typeof formData] as string}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className="w-full border p-2 rounded"
+      />
+    ))}
 
-      {/* --- Form fields (unchanged) --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* ...inputs... */}
-      </div>
-      <textarea /* ... */ />
-      <div className="space-y-2">
-        {/* ...specifications... */}
-      </div>
+    <label className="flex items-center gap-2 mt-2">
+      <input
+        type="checkbox"
+        name="featured"
+        checked={formData.featured}
+        onChange={handleChange}
+      />
+      Featured
+    </label>
+  </div>
 
-      {/* --- MODIFIED FILE UPLOADERS --- */}
+  <textarea
+    name="description"
+    value={formData.description}
+    onChange={handleChange}
+    placeholder="Product Description*"
+    rows={4}
+    className="w-full border p-2 rounded"
+  />
+
+  <div className="space-y-2">
+    <h3 className="text-lg font-semibold">📋 Specifications</h3>
+    {Object.entries(specifications).map(([key, value], index) => (
+      <div key={index} className="flex gap-2 mb-2">
+        <input
+          type="text"
+          value={key}
+          onChange={(e) => {
+            const newKey = e.target.value;
+            const newSpecs = { ...specifications };
+            const val = newSpecs[key];
+            delete newSpecs[key];
+            newSpecs[newKey] = val;
+            setSpecifications(newSpecs);
+          }}
+          className="w-1/2 border p-2 rounded"
+          placeholder="Title"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => handleSpecChange(key, e.target.value)}
+          className="w-1/2 border p-2 rounded"
+          placeholder="Value"
+        />
+      </div>
+    ))}
+
+    <button
+      type="button"
+      className="bg-gray-200 px-3 py-1 rounded text-sm"
+      onClick={() => handleSpecChange("", "")}
+    >
+      ➕ Add Specification
+    </button>
+  </div>
+
+ {/* --- MODIFIED FILE UPLOADERS --- */}
       <div>
         <h3 className="text-lg font-medium mb-2">📸 Product Images</h3>
         <FileEditUpload
@@ -205,16 +276,14 @@ const EditProduct = () => {
             onImageRemove={handleReviewImageRemove}
         />
       </div>
-
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="bg-blue-600 text-white px-4 py-2 rounded w-full disabled:bg-gray-400"
-      >
-        {loading ? "Updating..." : "Update Product"}
-      </button>
-    </div>
-  );
+<button
+    onClick={handleSubmit}
+    disabled={loading}
+    className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+  >
+    {loading ? "Updating..." : "Update Product"}
+  </button>
+</div>
+);
 };
-
 export default EditProduct;
