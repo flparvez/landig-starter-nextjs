@@ -32,6 +32,7 @@ const {id} = (await params)
         brand: body.brand,
         video: body.video,
         images: body.images,
+        reviews: body.reviews,
         featured: Boolean(body.featured),
       },
       { new: true }

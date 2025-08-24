@@ -5,21 +5,49 @@ import { upload } from "@imagekit/next";
 import Image from "next/image";
 
 interface FileUploadProps {
+  // This callback will receive an array of URLs from the latest upload batch
   onUploadComplete: (urls: string[]) => void;
+  // This callback will be triggered when an image is removed
+  onImageRemove: (updatedUrls: string[]) => void;
   defaultImages?: { url: string }[] | string[];
 }
 
-const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) => {
+const FileUpload = ({ 
+  onUploadComplete, 
+  onImageRemove,
+  defaultImages = [] 
+}: FileUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [progresses, setProgresses] = useState<number[]>([]);
+  // Tracks progress of each file by its name during an upload session
+  const [progresses, setProgresses] = useState<Record<string, number>>({});
   const [uploading, setUploading] = useState(false);
-  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  // This state holds all URLs displayed in the component
+  const [displayedUrls, setDisplayedUrls] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
 
+  // Memoize the initial setup to prevent re-renders from changing the default images
+  const hasInitialized = useRef(false);
+  useEffect(() => {
+    if (!hasInitialized.current && defaultImages.length > 0) {
+      const initialUrls = defaultImages.map((img) =>
+        typeof img === "string" ? img : img.url
+      );
+      setDisplayedUrls(initialUrls);
+      hasInitialized.current = true;
+    }
+  }, [defaultImages]);
+
   const getAuthParams = async () => {
-    const res = await fetch("/api/auth/imagekit-auth");
-    if (!res.ok) throw new Error("ImageKit authentication failed");
-    return res.json();
+    try {
+      const res = await fetch("/api/auth/imagekit-auth");
+      if (!res.ok) {
+        throw new Error(`Authentication request failed: ${res.statusText}`);
+      }
+      return res.json();
+    } catch (error) {
+      console.error("Failed to get ImageKit authentication parameters.", error);
+      throw error; // Re-throw to be caught in handleFiles
+    }
   };
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -27,16 +55,14 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
     if (fileArray.length === 0) return;
 
     setUploading(true);
-    const auth = await getAuthParams();
-    const newUrls: string[] = [];
-    const newProgresses: number[] = Array(fileArray.length).fill(0);
+    setProgresses({}); // Reset progress for the new batch
 
-    setProgresses((prev) => [...prev, ...newProgresses]);
+    try {
+      const auth = await getAuthParams();
 
-    for (let i = 0; i < fileArray.length; i++) {
-      const file = fileArray[i];
-      try {
-        const result = await upload({
+      // Create an array of upload promises to run them in parallel
+      const uploadPromises = fileArray.map((file) =>
+        upload({
           file,
           fileName: file.name,
           publicKey: auth.publicKey,
@@ -44,70 +70,76 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
           expire: auth.expire,
           token: auth.token,
           onProgress: (e) => {
-            const percent = Math.round((e.loaded / e.total) * 100);
-            setProgresses((prev) => {
-              const updated = [...prev];
-              updated[uploadedUrls.length + i] = percent;
-              return updated;
-            });
+            setProgresses((prev) => ({
+              ...prev,
+              [file.name]: Math.round((e.loaded / e.total) * 100),
+            }));
           },
-        });
+        })
+      );
 
-        if (result?.url) {
-          newUrls.push(result.url);
-        }
-      } catch (error) {
-        console.error("Upload error:", error);
+      // Wait for ALL uploads to complete
+      const results = await Promise.all(uploadPromises);
+      
+      // Filter out any failed uploads and get the URLs
+      const newUrls = results
+        .map((result) => result.url)
+        .filter((url): url is string => !!url);
+
+      // --- KEY CHANGE ---
+      // 1. Send ONLY the new URLs to the parent component
+      if (newUrls.length > 0) {
+        onUploadComplete(newUrls);
       }
-    }
 
-    const updatedUrls = [...uploadedUrls, ...newUrls];
-    setUploadedUrls(updatedUrls);
-    onUploadComplete(updatedUrls);
-    setUploading(false);
+      // 2. Update the local display state to include the new images
+      setDisplayedUrls((prevUrls) => [...prevUrls, ...newUrls]);
+
+    } catch (error) {
+      console.error("An error occurred during the file upload process:", error);
+      // Optionally, add some user-facing error feedback here
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragging(false);
-    await handleFiles(e.dataTransfer.files);
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) await handleFiles(e.target.files);
-  };
-
-  const removeImage = (url: string) => {
-    const updated = uploadedUrls.filter((u) => u !== url);
-    setUploadedUrls(updated);
-    onUploadComplete(updated);
-  };
-
-  const hasInitialized = useRef(false);
-  useEffect(() => {
-    if (!hasInitialized.current && defaultImages && Array.isArray(defaultImages)) {
-      const urls = defaultImages.map((img) =>
-        typeof img === "string" ? img : img.url
-      );
-      setUploadedUrls(urls);
-      onUploadComplete(urls);
-      hasInitialized.current = true;
+    if (!uploading) {
+        handleFiles(e.dataTransfer.files);
     }
-  }, [defaultImages, onUploadComplete]);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFiles(e.target.files);
+      // Reset the input value to allow re-uploading the same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeImage = (urlToRemove: string) => {
+    const updatedUrls = displayedUrls.filter((url) => url !== urlToRemove);
+    setDisplayedUrls(updatedUrls);
+    // Notify the parent that the list of images has changed
+    onImageRemove(updatedUrls);
+  };
 
   return (
     <div className="border border-dashed rounded-md p-4 bg-gray-50">
       <div
-        className={`w-full h-32 flex items-center justify-center border-2 border-dashed rounded-md cursor-pointer transition ${
-          dragging ? "border-blue-500 bg-blue-100" : "border-gray-300"
-        }`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
+        className={`w-full h-32 flex items-center justify-center border-2 border-dashed rounded-md transition ${
+          uploading
+            ? "cursor-not-allowed bg-gray-200"
+            : "cursor-pointer hover:border-blue-500 hover:bg-blue-50"
+        } ${dragging ? "border-blue-500 bg-blue-100" : "border-gray-300"}`}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => !uploading && fileInputRef.current?.click()}
       >
         {uploading ? "Uploading..." : "📤 Drag & drop files here or click to select"}
       </div>
@@ -118,23 +150,29 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
         hidden
         ref={fileInputRef}
         onChange={handleFileChange}
+        disabled={uploading}
       />
 
-      {progresses.length > 0 && uploading && (
+      {uploading && Object.keys(progresses).length > 0 && (
         <div className="mt-3 space-y-2">
-          {progresses.map((p, i) => (
-            <div key={i}>
-              Upload {i + 1}: <progress value={p} max={100} className="w-full" />
+          <h4 className="font-semibold mb-2">Upload Progress</h4>
+          {Object.entries(progresses).map(([fileName, progress]) => (
+            <div key={fileName}>
+              <p className="text-sm text-gray-600 truncate">{fileName}</p>
+              <div className="flex items-center gap-2">
+                <progress value={progress} max={100} className="w-full h-2 [&::-webkit-progress-bar]:rounded-lg [&::-webkit-progress-value]:rounded-lg [&::-webkit-progress-value]:bg-blue-600 [&::-moz-progress-bar]:bg-blue-600" />
+                <span className="text-sm font-medium">{progress}%</span>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {uploadedUrls.length > 0 && (
+      {displayedUrls.length > 0 && (
         <div className="mt-4">
           <h4 className="font-semibold mb-2">📸 Uploaded Images</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {uploadedUrls.map((url, idx) => (
+            {displayedUrls.map((url, idx) => (
               <div key={idx} className="relative group">
                 <Image
                   width={200}
@@ -145,7 +183,7 @@ const FileUpload = ({ onUploadComplete, defaultImages = [] }: FileUploadProps) =
                 />
                 <button
                   onClick={() => removeImage(url)}
-                  className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+                  className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full p-1 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
                   title="Remove Image"
                 >
                   ✕

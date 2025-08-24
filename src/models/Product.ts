@@ -22,6 +22,7 @@ export interface IProduct extends Document {
   tags?: string[];
   specifications?: Record<string, string>;
   images: IProductImage[];
+  reviews: IProductImage[];
   featured?: boolean;
   rating?: number;
 }
@@ -49,6 +50,7 @@ const productSchema = new Schema<IProduct>(
     brand: { type: String },
     video: { type: String },
     images: { type: [productImageSchema], required: true },
+    reviews: { type: [productImageSchema], required: true },
     tags: [{ type: String }],
     specifications: { type: Schema.Types.Mixed },
     featured: { type: Boolean, default: false },

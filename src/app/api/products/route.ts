@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       category: body.category,
       brand: body.brand || '',
       video: body.video || '',
-      images: body.images, // Must be array of { url, fileId?, altText? }
+      images: body.images, 
+      reviews: body.reviews, 
       featured: Boolean(body.featured),
       tags: Array.isArray(body.tags) ? body.tags : [],
       specifications: typeof body.specifications === 'object' ? body.specifications : {},

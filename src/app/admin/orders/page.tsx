@@ -28,9 +28,10 @@ const AllOrders = () => {
     const fetchOrders = async () => {
       try {
         const res = await fetch("/api/orders");
-        if (!res.ok) throw new Error("Failed to fetch data");
+      
         const data = await res.json();
         setOrders(data?.orders || []);
+          if (!res.ok) throw new Error("Failed to fetch data");
       } catch (error) {
         console.error(error);
       } finally {
