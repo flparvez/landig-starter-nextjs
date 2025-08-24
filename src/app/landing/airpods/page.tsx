@@ -1,17 +1,17 @@
 
+import AirpodsPage from '@/components/landing/AirpodsPage'
 import React from 'react'
 
-import LandingPage from '@/components/landing/LandingPage'
 
 const Landing = async () => {
-  const res = await fetch('https://landig-starter-nextjs.vercel.app/api/products/6898b8dadf8680e054da635f', {
+  const res = await fetch('https://landig-starter-nextjs.vercel.app/api/products/68ab4a3bf07c49ae82eb0193', {
     next: { revalidate: 60 },
   })
   const product = await res.json()
 
   return (
  <main>
-  <LandingPage product = {product?.product} />
+  <AirpodsPage product = {product?.product} />
  </main>
   )
 }

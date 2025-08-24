@@ -7,6 +7,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
+import { toast } from "sonner";
 
 // 1. Define types
 export interface CartItem {
@@ -71,7 +72,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     });
 
     // ✅ Alert for add to cart
-    alert(`${item.name} added to cart`);
+    toast.success(`${item.name} added to cart`);
   };
 
   const removeFromCart = (productId: string) => {

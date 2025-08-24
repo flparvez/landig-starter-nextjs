@@ -1,4 +1,5 @@
 import Home from '@/components/Home';
+import Link from 'next/link';
 import React from 'react';
 
 const HomePage = async () => {
@@ -16,6 +17,11 @@ const HomePage = async () => {
 
     return (
       <div>
+        {/*  link of page */}
+<h2>Landing Page link</h2>
+        <div>
+          <Link className='p-4 text-xl' href="/landing/airpods">Airpods</Link>
+        </div>
         <Home products={data?.products || []} />
       </div>
     );
